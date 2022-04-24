@@ -33,6 +33,7 @@ contract StakedToken is
   IERC20 public immutable REWARD_TOKEN;
   uint256 public immutable COOLDOWN_SECONDS;
   uint256 public immutable LOCK_TIME = 7 * 24 * 60 * 60;
+  uint256 public  TOTAL_STAKED;
 
   /// @notice Seconds available to redeem once the cooldown period is fullfilled
   uint256 public immutable UNSTAKE_WINDOW;
@@ -42,13 +43,13 @@ contract StakedToken is
 
   mapping(address => uint256) public stakerRewardsToClaim;
   mapping(address => uint256) public stakersCooldowns;
-
+  mapping (uint256=>uint256) public amountOfLockedRewards;
 
   //define variable for claim reward in 7 days
   uint256[] public lockTimestampOfUsers;
   mapping (address=>uint256) public stakerRewardLockTime;
   mapping (uint256=>uint256) public timestampToIndexOfUsers;
-
+  mapping (uint256=>uint256) public subAmountAfterLockTime;
 
   // event
   event Staked(address indexed from, address indexed onBehalfOf, uint256 amount);
@@ -103,22 +104,31 @@ contract StakedToken is
     require(stakerRewardLockTime[msg.sender] == 0, 'YOU ARE STAKED');
 
     uint256 balanceOfUser = balanceOf(onBehalfOf);
-
+   
     uint256 accruedRewards =
-      _updateUserAssetInternal(onBehalfOf, address(this), balanceOfUser, totalSupply());
+      _updateUserAssetInternal(onBehalfOf, address(this), balanceOfUser, TOTAL_STAKED);
     if (accruedRewards != 0) {
       emit RewardsAccrued(onBehalfOf, accruedRewards);
       stakerRewardsToClaim[onBehalfOf] = stakerRewardsToClaim[onBehalfOf].add(accruedRewards);
     }
 
+    uint256 lockTimestamp =  block.timestamp.add(LOCK_TIME);
     // add time lock to map 
-    stakerRewardLockTime[msg.sender] = block.timestamp.add(LOCK_TIME);
+    stakerRewardLockTime[msg.sender] = lockTimestamp;
 
     // push time lock to array
-    lockTimestampOfUsers.push(block.timestamp.add(LOCK_TIME));
+    lockTimestampOfUsers.push(lockTimestamp);
+
+     //add to TOTAL_STAKED
+    TOTAL_STAKED = TOTAL_STAKED.add(amount);
+
+    // amount after lock time need sub
+    subAmountAfterLockTime[lockTimestamp] = amount;
+
 
     stakersCooldowns[onBehalfOf] = getNextCooldownTimestamp(0, amount, onBehalfOf, balanceOfUser);
 
+    
     _mint(onBehalfOf, amount);
     IERC20(STAKED_TOKEN).safeTransferFrom(msg.sender, address(this), amount);    
     emit Staked(msg.sender, onBehalfOf, amount);
@@ -252,7 +262,10 @@ contract StakedToken is
                 totalStaked,
                 lockTimestampOfUsers[i]
             );
-           
+            
+           //after pass lock time will sub amount of total staked
+            TOTAL_STAKED = TOTAL_STAKED.sub(amountOfLockedRewards[lockTimestampOfUsers[i]]);
+
             if (lockTimestampOfUsers[i] > block.timestamp) break;
         }
       }
@@ -338,7 +351,7 @@ function _updateUserAssetInternal(
     bool updateStorage
   ) internal returns (uint256) {
     uint256 accruedRewards =
-      _updateUserAssetInternal(user, address(this), userBalance, totalSupply());
+      _updateUserAssetInternal(user, address(this), userBalance, TOTAL_STAKED);
     uint256 unclaimedRewards = stakerRewardsToClaim[user].add(accruedRewards);
 
     if (accruedRewards != 0) {
@@ -414,7 +427,7 @@ function _updateUserAssetInternal(
         assetConfig.index, 
         assetConfig.emissionPerSecond, 
         assetConfig.lastUpdateTimestamp, 
-        totalSupply(),
+        TOTAL_STAKED,
         stakerRewardLockTime[staker]
       );
 
