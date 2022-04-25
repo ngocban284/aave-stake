@@ -34,6 +34,7 @@ contract StakedToken is
   uint256 public immutable COOLDOWN_SECONDS;
   uint256 public immutable LOCK_TIME = 7 * 24 * 60 * 60;
   uint256 public  TOTAL_STAKED;
+  uint256 public TOTAL_USERS;
 
   /// @notice Seconds available to redeem once the cooldown period is fullfilled
   uint256 public immutable UNSTAKE_WINDOW;
@@ -122,9 +123,11 @@ contract StakedToken is
      //add to TOTAL_STAKED
     TOTAL_STAKED = TOTAL_STAKED.add(amount);
 
-    // amount after lock time need sub
+    // amount after lock time, need sub
     subAmountAfterLockTime[lockTimestamp] = amount;
 
+    // add to TOTAL_USERS
+    TOTAL_USERS = TOTAL_USERS.add(1);
 
     stakersCooldowns[onBehalfOf] = getNextCooldownTimestamp(0, amount, onBehalfOf, balanceOfUser);
 
@@ -242,6 +245,21 @@ contract StakedToken is
   //  * @return The unclaimed rewards that were added to the total accrued
   //  **/
 
+   function _getEmissionPerSecondByTotalUsers(uint256 totalUsers) public view returns(uint128){
+    uint256 a=10000;
+    uint256 b=1;
+    uint256 c=5041;
+    uint256 d=5;
+
+    uint256 numerator = (totalUsers.mul(a)).sub(b);
+    uint256 denominator = (totalUsers.mul(totalUsers).mul(totalUsers)).add(c);
+
+    uint256 emissionPerSecond = (numerator.div(denominator)).add(d);
+
+    return uint128(emissionPerSecond);
+
+   }
+
   function _updateAssetStateInternal(
   address underlyingAsset,
   AssetData storage assetConfig,
@@ -249,6 +267,10 @@ contract StakedToken is
 ) internal override returns (uint256){
    uint256 oldIndex = assetConfig.index;
    uint128 lastUpdateTimestamp = assetConfig.lastUpdateTimestamp;
+ 
+    //update emissionPerSecond
+    //  assetConfig.emissionPerSecond = _getEmissionPerSecondByTotalUsers(TOTAL_USERS);
+
      for (uint256 i = 0; i < lockTimestampOfUsers.length; i++) {
         if (
             lockTimestampOfUsers[i] <= block.timestamp &&
@@ -265,6 +287,10 @@ contract StakedToken is
             
            //after pass lock time will sub amount of total staked
             TOTAL_STAKED = TOTAL_STAKED.sub(amountOfLockedRewards[lockTimestampOfUsers[i]]);
+
+            //sub the total user
+            TOTAL_USERS = TOTAL_USERS.sub(1);
+
 
             if (lockTimestampOfUsers[i] > block.timestamp) break;
         }
@@ -343,7 +369,6 @@ function _updateUserAssetInternal(
       );
 
   }
-
 
   function _updateCurrentUnclaimedRewards(
     address user,
