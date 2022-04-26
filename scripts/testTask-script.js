@@ -1,8 +1,11 @@
 const hre = require("hardhat");
 const { ethers } = require("ethers");
+const { util } = require("chai");
 const utils = ethers.utils;
 
 async function main() {
+  const ether = utils.parseEther("0.0000000000001");
+  console.log("ether :", ether);
   const [owner, vault, user1, user2, user3] = await hre.ethers.getSigners();
 
   const TVBToken = await hre.ethers.getContractFactory("TVBToken");
@@ -37,25 +40,42 @@ async function main() {
     },
   ]);
 
-  // sendt token to user and vault
-  await token.transfer(user1.address, 1000);
-  console.log("\nuser1 balance:", await token.balanceOf(user1.address));
+  //send token to user and vault
+  await token.transfer(user1.address, utils.parseEther("1"));
+  console.log(
+    "\nuser1 balance:",
+    utils.formatEther(await token.balanceOf(user1.address))
+  );
 
-  await token.transfer(user2.address, 2000);
-  console.log("user2 balance:", await token.balanceOf(user2.address));
+  await token.transfer(user2.address, utils.parseEther("2"));
+  console.log(
+    "user2 balance:",
+    utils.formatEther(await token.balanceOf(user2.address))
+  );
 
-  await token.transfer(user3.address, 3000);
-  console.log("user3 balance:", await token.balanceOf(user3.address));
+  await token.transfer(user3.address, utils.parseEther("3"));
+  console.log(
+    "user3 balance:",
+    utils.formatEther(await token.balanceOf(user3.address))
+  );
 
-  await token.transfer(vault.address, 999999999999999);
-  console.log("vault balance:", await token.balanceOf(vault.address));
+  await token.transfer(vault.address, utils.parseEther("9990"));
+  console.log(
+    "vault balance:",
+    utils.formatEther(await token.balanceOf(vault.address))
+  );
 
   //stake token with user1
-  await token.connect(vault).approve(stkToken.address, 999999999999999);
+  await token
+    .connect(vault)
+    .approve(stkToken.address, utils.parseEther("9990"));
 
-  await token.connect(user1).approve(stkToken.address, 1);
-  await stkToken.connect(user1).stake(user1.address, 1);
-  console.log("\nuser1 staked:", await stkToken.balanceOf(user1.address));
+  await token.connect(user1).approve(stkToken.address, utils.parseEther("1"));
+  await stkToken.connect(user1).stake(user1.address, utils.parseEther("1"));
+  console.log(
+    "\nuser1 staked:",
+    utils.formatEther(await stkToken.balanceOf(user1.address))
+  );
   const timeLockUser1 = await stkToken.stakerRewardLockTime(user1.address);
   console.log("time lock reward of user1 :", timeLockUser1);
 
@@ -64,9 +84,12 @@ async function main() {
   await hre.ethers.provider.send("evm_mine");
 
   //stake token with user2
-  await token.connect(user2).approve(stkToken.address, 1000);
-  await stkToken.connect(user2).stake(user2.address, 1000);
-  console.log("\nuser2 staked:", await stkToken.balanceOf(user2.address));
+  await token.connect(user2).approve(stkToken.address, utils.parseEther("2"));
+  await stkToken.connect(user2).stake(user2.address, utils.parseEther("2"));
+  console.log(
+    "\nuser2 staked:",
+    utils.formatEther(await stkToken.balanceOf(user2.address))
+  );
   const timeLockUser2 = await stkToken.stakerRewardLockTime(user2.address);
   console.log("time lock reward of user2 :", timeLockUser2);
 
@@ -75,7 +98,9 @@ async function main() {
     await stkToken.timestampToIndexOfUsers(timeLockUser1)
   );
   //user1 rewrad
-  let user1Reward = await stkToken.getTotalRewardsBalance(user1.address);
+  let user1Reward = utils.formatEther(
+    await stkToken.getTotalRewardsBalance(user1.address)
+  );
   console.log("get total reward of user1 after 7 days :", user1Reward);
   //current time of contract
   let currentTime = (
@@ -84,12 +109,12 @@ async function main() {
     )
   ).timestamp;
   console.log("current time of contract :", currentTime);
-  // user1 claim reward
-  // await stkToken.connect(user1).claimRewards(user1.address, user1Reward);
-  // console.log(
-  //   "\nbalance of user1 after claim reward:",
-  //   await token.balanceOf(user1.address)
-  // );
+  // // user1 claim reward
+  // // await stkToken.connect(user1).claimRewards(user1.address, user1Reward);
+  // // console.log(
+  // //   "\nbalance of user1 after claim reward:",
+  // //   await token.balanceOf(user1.address)
+  // // );
 
   //next 2 days
   await hre.ethers.provider.send("evm_increaseTime", [2 * 24 * 3600]);
@@ -119,25 +144,28 @@ async function main() {
   console.log("current time of contract :", currentTime);
 
   // redeem and claim reward of user1
-  await stkToken.connect(user1).redeem(user1.address, 1);
+  await stkToken.connect(user1).redeem(user1.address, utils.parseEther("1"));
   await stkToken.connect(user1).claimRewards(user1.address, user1Reward);
 
-  console.log("\nbalance of user1:", await token.balanceOf(user1.address));
-
-  //total user
-  const totalUser = await stkToken.TOTAL_USERS();
-  console.log("\ntotal user staked :", totalUser);
-
-  //increase time to contract
-  await hre.ethers.provider.send("evm_increaseTime", [7 * 24 * 3600]);
-  await hre.ethers.provider.send("evm_mine");
-  console.log("----");
-  //check emmissionPerSecond
-  const emissionPerSecond = await stkToken._getEmissionPerSecondByTotalUsers(
-    totalUser
+  console.log(
+    "\nbalance of user1:",
+    utils.formatEther(await token.balanceOf(user1.address))
   );
-  console.log("----");
-  console.log("\nemmissionPerSecond :", emissionPerSecond);
+
+  // //total user
+  // const totalUser = await stkToken.TOTAL_USERS();
+  // console.log("\ntotal user staked :", totalUser);
+
+  // //increase time to contract
+  // await hre.ethers.provider.send("evm_increaseTime", [7 * 24 * 3600]);
+  // await hre.ethers.provider.send("evm_mine");
+  // console.log("----");
+  // //check emmissionPerSecond
+  // const emissionPerSecond = await stkToken._getEmissionPerSecondByTotalUsers(
+  //   totalUser
+  // );
+  // console.log("----");
+  // console.log("\nemmissionPerSecond :", emissionPerSecond);
 }
 
 main()

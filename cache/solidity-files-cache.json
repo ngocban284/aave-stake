@@ -184,8 +184,8 @@
       ]
     },
     "/Users/ngocban/Desktop/aave-stake/contracts/stake/StakedToken.sol": {
-      "lastModificationDate": 1650893388225,
-      "contentHash": "1a1f8e64c79c9aaf93f34de2ef93cd77",
+      "lastModificationDate": 1650942847563,
+      "contentHash": "928f60bbbf42ced6ac665f32c3947804",
       "sourceName": "contracts/stake/StakedToken.sol",
       "solcConfig": {
         "version": "0.7.5",

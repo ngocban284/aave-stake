@@ -105,7 +105,10 @@ contract StakedToken is
     require(stakerRewardLockTime[msg.sender] == 0, 'YOU ARE STAKED');
 
     uint256 balanceOfUser = balanceOf(onBehalfOf);
-   
+
+    // add to TOTAL_USERS
+    TOTAL_USERS = TOTAL_USERS.add(1);
+
     uint256 accruedRewards =
       _updateUserAssetInternal(onBehalfOf, address(this), balanceOfUser, TOTAL_STAKED);
     if (accruedRewards != 0) {
@@ -125,9 +128,6 @@ contract StakedToken is
 
     // amount after lock time, need sub
     subAmountAfterLockTime[lockTimestamp] = amount;
-
-    // add to TOTAL_USERS
-    TOTAL_USERS = TOTAL_USERS.add(1);
 
     stakersCooldowns[onBehalfOf] = getNextCooldownTimestamp(0, amount, onBehalfOf, balanceOfUser);
 
@@ -245,13 +245,13 @@ contract StakedToken is
   //  * @return The unclaimed rewards that were added to the total accrued
   //  **/
 
-   function _getEmissionPerSecondByTotalUsers(uint256 totalUsers) public view returns(uint128){
+   function _getEmissionPerSecondByTotalUsers(uint256 totalUsers) public pure returns(uint128){
     uint256 a=10000;
     uint256 b=1;
     uint256 c=5041;
     uint256 d=5;
 
-    uint256 numerator = (totalUsers.mul(a)).sub(b);
+    uint256 numerator = (totalUsers.mul(a)).add(b);
     uint256 denominator = (totalUsers.mul(totalUsers).mul(totalUsers)).add(c);
 
     uint256 emissionPerSecond = (numerator.div(denominator)).add(d);
@@ -269,7 +269,7 @@ contract StakedToken is
    uint128 lastUpdateTimestamp = assetConfig.lastUpdateTimestamp;
  
     //update emissionPerSecond
-    //  assetConfig.emissionPerSecond = _getEmissionPerSecondByTotalUsers(TOTAL_USERS);
+     assetConfig.emissionPerSecond = _getEmissionPerSecondByTotalUsers(TOTAL_USERS);
 
      for (uint256 i = 0; i < lockTimestampOfUsers.length; i++) {
         if (
