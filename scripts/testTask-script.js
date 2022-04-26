@@ -119,6 +119,21 @@ async function main() {
   //next 2 days
   await hre.ethers.provider.send("evm_increaseTime", [2 * 24 * 3600]);
   await hre.ethers.provider.send("evm_mine");
+
+  //user2 reward
+  let user2Reward = utils.formatEther(
+    await stkToken.getTotalRewardsBalance(user2.address)
+  );
+  console.log("get total reward of user2 after 2 days :", user2Reward);
+
+  //stake token with user3
+  await token.connect(user3).approve(stkToken.address, utils.parseEther("3"));
+  await stkToken.connect(user3).stake(user3.address, utils.parseEther("3"));
+  console.log(
+    "\nuser3 staked:",
+    utils.formatEther(await stkToken.balanceOf(user3.address))
+  );
+
   //user1 rewrad
   user1Reward = await stkToken.getTotalRewardsBalance(user1.address);
   console.log("get total reward of user1 after 9 days :", user1Reward);
@@ -151,6 +166,48 @@ async function main() {
     "\nbalance of user1:",
     utils.formatEther(await token.balanceOf(user1.address))
   );
+
+  //next 2 day => user2 4day
+  await hre.ethers.provider.send("evm_increaseTime", [2 * 24 * 3600]);
+  await hre.ethers.provider.send("evm_mine");
+
+  user2Reward = utils.formatEther(
+    await stkToken.getTotalRewardsBalance(user2.address)
+  );
+  console.log("get total reward of user2 after 4 days :", user2Reward);
+
+  let user3Reward = utils.formatEther(
+    await stkToken.getTotalRewardsBalance(user3.address)
+  );
+  console.log("get total reward of user3 after 20s  :", user3Reward);
+
+  //next 4 day
+  await hre.ethers.provider.send("evm_increaseTime", [4 * 24 * 3600]);
+  await hre.ethers.provider.send("evm_mine");
+
+  user2Reward = utils.formatEther(
+    await stkToken.getTotalRewardsBalance(user2.address)
+  );
+  console.log("get total reward of user2 after 8 days :", user2Reward);
+
+  // //user2 call cooldown
+  // await stkToken.connect(user2).cooldown();
+  // //increa time to back cooldown
+  // await hre.ethers.provider.send("evm_increaseTime", [20]);
+  // await hre.ethers.provider.send("evm_mine");
+  // //current time of contract
+  // currentTime = (
+  //   await hre.ethers.provider.getBlock(
+  //     await hre.ethers.provider.getBlockNumber()
+  //   )
+  // ).timestamp;
+  // console.log("current time of contract :", currentTime);
+
+  // redeem and claim reward of user1
+  // await stkToken.connect(user2).redeem(user2.address, utils.parseEther("2"));
+  // await stkToken
+  //   .connect(user2)
+  //   .claimRewards(user2.address, utils.parseUnits(user2Reward, 18));
 
   // //total user
   // const totalUser = await stkToken.TOTAL_USERS();

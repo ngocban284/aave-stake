@@ -286,11 +286,10 @@ contract StakedToken is
             );
             
            //after pass lock time will sub amount of total staked
-            TOTAL_STAKED = TOTAL_STAKED.sub(amountOfLockedRewards[lockTimestampOfUsers[i]]);
+            TOTAL_STAKED = TOTAL_STAKED.sub(subAmountAfterLockTime[lockTimestampOfUsers[i]]);
 
             //sub the total user
             TOTAL_USERS = TOTAL_USERS.sub(1);
-
 
             if (lockTimestampOfUsers[i] > block.timestamp) break;
         }
