@@ -127,7 +127,7 @@ contract StakedToken is
     TOTAL_STAKED = TOTAL_STAKED.add(amount);
 
     // amount after lock time, need sub
-    subAmountAfterLockTime[lockTimestamp] = amount;
+    subAmountAfterLockTime[lockTimestamp] = subAmountAfterLockTime[lockTimestamp].add(amount);
 
     stakersCooldowns[onBehalfOf] = getNextCooldownTimestamp(0, amount, onBehalfOf, balanceOfUser);
 
@@ -321,15 +321,13 @@ function _updateUserAssetInternal(
     uint256 userIndex = assetData.users[user];
     uint256 accruedRewards = 0;
 
-    uint256 newIndex;
+    uint256 newIndex=_updateAssetStateInternal(asset, assetData, totalStaked);
 
     if (
       stakerRewardLockTime[user] != 0 &&
       block.timestamp > lockTimestampOfUsers[userIndex]
     ) {
       newIndex = timestampToIndexOfUsers[lockTimestampOfUsers[userIndex]];
-    } else {
-      newIndex = _updateAssetStateInternal(asset, assetData, totalStaked);
     }
 
     if (userIndex != newIndex) {
@@ -452,7 +450,9 @@ function _updateUserAssetInternal(
         assetConfig.emissionPerSecond, 
         assetConfig.lastUpdateTimestamp, 
         TOTAL_STAKED,
-        stakerRewardLockTime[staker]
+        block.timestamp <= stakerRewardLockTime[staker] 
+        ? block.timestamp 
+        : stakerRewardLockTime[staker]
       );
 
 
