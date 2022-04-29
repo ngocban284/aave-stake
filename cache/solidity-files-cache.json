@@ -39,8 +39,8 @@
       ]
     },
     "/Users/ngocban/Desktop/aave-stake/contracts/lib/DistributionTypes.sol": {
-      "lastModificationDate": 1650207839050,
-      "contentHash": "638c8a43d044b3f7d3a3aa37b882e0e3",
+      "lastModificationDate": 1651160958939,
+      "contentHash": "c80d377e6a4db748b70563b0a2c32472",
       "sourceName": "contracts/lib/DistributionTypes.sol",
       "solcConfig": {
         "version": "0.7.5",
@@ -74,8 +74,8 @@
       ]
     },
     "/Users/ngocban/Desktop/aave-stake/contracts/stake/AaveDistributionManager.sol": {
-      "lastModificationDate": 1650617963415,
-      "contentHash": "44ed5ec862038e6a3901329b401d3e9a",
+      "lastModificationDate": 1651196742062,
+      "contentHash": "168c51b83fef153083c4d35348a4b018",
       "sourceName": "contracts/stake/AaveDistributionManager.sol",
       "solcConfig": {
         "version": "0.7.5",
@@ -184,8 +184,8 @@
       ]
     },
     "/Users/ngocban/Desktop/aave-stake/contracts/stake/StakedToken.sol": {
-      "lastModificationDate": 1651042778380,
-      "contentHash": "768065ea7b746f7b24ef6c2e1da94eb3",
+      "lastModificationDate": 1651196593153,
+      "contentHash": "b8d8cb5fb291a44cd4e317f0474ae000",
       "sourceName": "contracts/stake/StakedToken.sol",
       "solcConfig": {
         "version": "0.7.5",

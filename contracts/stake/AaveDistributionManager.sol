@@ -19,6 +19,10 @@ contract AaveDistributionManager is IAaveDistributionManager {
     uint128 emissionPerSecond;
     uint128 lastUpdateTimestamp;
     uint256 index;
+    uint256 A;
+    uint256 B;
+    uint256 C;
+    uint256 D;
     mapping(address => uint256) users;
   }
 
@@ -51,11 +55,18 @@ contract AaveDistributionManager is IAaveDistributionManager {
 
     for (uint256 i = 0; i < assetsConfigInput.length; i++) {
       AssetData storage assetConfig = assets[assetsConfigInput[i].underlyingAsset];
-
+      assetConfig.A = assetsConfigInput[i].A;
+      assetConfig.B = assetsConfigInput[i].B;
+      assetConfig.C = assetsConfigInput[i].C;
+      assetConfig.D = assetsConfigInput[i].D;
       _updateAssetStateInternal(
         assetsConfigInput[i].underlyingAsset,
         assetConfig,
-        assetsConfigInput[i].totalStaked
+        assetsConfigInput[i].totalStaked,
+        assetConfig.A,
+        assetConfig.B,
+        assetConfig.C,
+        assetConfig.D
       );
 
       assetConfig.emissionPerSecond = assetsConfigInput[i].emissionPerSecond;
@@ -77,7 +88,11 @@ contract AaveDistributionManager is IAaveDistributionManager {
   function _updateAssetStateInternal(
     address underlyingAsset,
     AssetData storage assetConfig,
-    uint256 totalStaked
+    uint256 totalStaked,
+    uint256 A,
+    uint256 B,
+    uint256 C,
+    uint256 D
   ) internal virtual returns (uint256) {
 
     uint256 oldIndex = assetConfig.index;
@@ -117,7 +132,16 @@ contract AaveDistributionManager is IAaveDistributionManager {
     uint256 userIndex = assetData.users[user];
     uint256 accruedRewards = 0;
 
-    uint256 newIndex = _updateAssetStateInternal(asset, assetData, totalStaked);
+    uint256 newIndex = 
+    _updateAssetStateInternal(
+      asset,
+      assetData,
+      totalStaked,
+      assetData.A,
+      assetData.B,
+      assetData.C,
+      assetData.D
+      );
 
     if (userIndex != newIndex) {
       if (stakedByUser != 0) {

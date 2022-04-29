@@ -6,6 +6,10 @@ library DistributionTypes {
   struct AssetConfigInput {
     uint128 emissionPerSecond;
     uint256 totalStaked;
+    uint256 A;
+    uint256 B;
+    uint256 C;
+    uint256 D;
     address underlyingAsset;
   }
 

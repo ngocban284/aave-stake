@@ -169,6 +169,7 @@ contract StakedToken is
     IERC20(STAKED_TOKEN).safeTransfer(to, amountToRedeem);
 
     delete stakerRewardLockTime[msg.sender];
+    
     emit Redeem(msg.sender, to, amountToRedeem);
   }
 
@@ -245,31 +246,32 @@ contract StakedToken is
   //  * @return The unclaimed rewards that were added to the total accrued
   //  **/
 
-   function _getEmissionPerSecondByTotalUsers(uint256 totalUsers) public pure returns(uint128){
-    uint256 a=10000;
-    uint256 b=1;
-    uint256 c=5041;
-    uint256 d=5;
+   function _getEmissionPerSecondByTotalUsers(uint256 totalUsers,uint256 A,uint256 B,uint256 C,uint256 D) public pure returns(uint128){
+   
 
-    uint256 numerator = (totalUsers.mul(a)).add(b);
-    uint256 denominator = (totalUsers.mul(totalUsers).mul(totalUsers)).add(c);
+    uint256 numerator = totalUsers.mul(A);
+    uint256 denominator = (B.mul(totalUsers).mul(totalUsers)).add(C);
 
-    uint256 emissionPerSecond = (numerator.div(denominator)).add(d);
+    uint256 emissionPerSecond = (numerator.div(denominator)).add(D);
 
     return uint128(emissionPerSecond);
 
    }
 
   function _updateAssetStateInternal(
-  address underlyingAsset,
-  AssetData storage assetConfig,
-  uint256 totalStaked
-) internal override returns (uint256){
+    address underlyingAsset,
+    AssetData storage assetConfig,
+    uint256 totalStaked,
+    uint256 A,
+    uint256 B,
+    uint256 C,
+    uint256 D
+  ) internal override returns (uint256){
    uint256 oldIndex = assetConfig.index;
    uint128 lastUpdateTimestamp = assetConfig.lastUpdateTimestamp;
- 
+
     //update emissionPerSecond
-     assetConfig.emissionPerSecond = _getEmissionPerSecondByTotalUsers(TOTAL_USERS);
+     assetConfig.emissionPerSecond = _getEmissionPerSecondByTotalUsers(TOTAL_USERS,A,B,C,D);
 
      for (uint256 i = 0; i < lockTimestampOfUsers.length; i++) {
         if (
@@ -281,7 +283,7 @@ contract StakedToken is
                 oldIndex, 
                 assetConfig.emissionPerSecond, 
                 lastUpdateTimestamp, 
-                totalStaked,
+                TOTAL_STAKED,
                 lockTimestampOfUsers[i]
             );
             
@@ -321,7 +323,14 @@ function _updateUserAssetInternal(
     uint256 userIndex = assetData.users[user];
     uint256 accruedRewards = 0;
 
-    uint256 newIndex=_updateAssetStateInternal(asset, assetData, totalStaked);
+    uint256 newIndex=_updateAssetStateInternal(
+      asset, 
+      assetData, 
+      totalStaked,
+      assetData.A,
+      assetData.B,
+      assetData.C,
+      assetData.D);
 
     if (
       stakerRewardLockTime[user] != 0 &&
