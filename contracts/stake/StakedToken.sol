@@ -2,16 +2,15 @@
 pragma solidity 0.7.5;
 pragma experimental ABIEncoderV2;
 
-import "hardhat/console.sol";
-import {IERC20} from '../interfaces/IERC20.sol';
-import {IStakedAave} from '../interfaces/IStakedAave.sol';
-import {ITransferHook} from '../interfaces/ITransferHook.sol';
-import {ERC20WithSnapshot} from '../lib/ERC20WithSnapshot.sol';
-import {SafeERC20} from '../lib/SafeERC20.sol';
-import {VersionedInitializable} from '../utils/VersionedInitializable.sol';
-import {DistributionTypes} from '../lib/DistributionTypes.sol';
-import {AaveDistributionManager} from './AaveDistributionManager.sol';
-import {SafeMath} from '../lib/SafeMath.sol';
+import {IERC20} from "../interfaces/IERC20.sol";
+import {IStakedAave} from "../interfaces/IStakedAave.sol";
+import {ITransferHook} from "../interfaces/ITransferHook.sol";
+import {ERC20WithSnapshot} from "../lib/ERC20WithSnapshot.sol";
+import {SafeERC20} from "../lib/SafeERC20.sol";
+import {VersionedInitializable} from "../utils/VersionedInitializable.sol";
+import {DistributionTypes} from "../lib/DistributionTypes.sol";
+import {AaveDistributionManager} from "./AaveDistributionManager.sol";
+import {SafeMath} from "../lib/SafeMath.sol";
 
 /**
  * @title StakedToken
@@ -19,461 +18,521 @@ import {SafeMath} from '../lib/SafeMath.sol';
  * @author Aave
  **/
 contract StakedToken is
-  IStakedAave,
-  ERC20WithSnapshot,
-  VersionedInitializable,
-  AaveDistributionManager
+    IStakedAave,
+    ERC20WithSnapshot,
+    VersionedInitializable,
+    AaveDistributionManager
 {
-  using SafeMath for uint256;
-  using SafeERC20 for IERC20;
+    using SafeMath for uint256;
+    using SafeERC20 for IERC20;
 
-  uint256 public constant REVISION = 1;
+    uint256 public constant REVISION = 1;
 
-  IERC20 public immutable STAKED_TOKEN;
-  IERC20 public immutable REWARD_TOKEN;
-  uint256 public immutable COOLDOWN_SECONDS;
-  uint256 public immutable LOCK_TIME = 7 * 24 * 60 * 60;
-  uint256 public  TOTAL_STAKED;
-  uint256 public TOTAL_USERS;
+    IERC20 public immutable STAKED_TOKEN;
+    IERC20 public immutable REWARD_TOKEN;
+    uint256 public immutable COOLDOWN_SECONDS;
+    uint256 public immutable LOCK_TIME = 7 * 24 * 3600; // LOCK IN 7 DAYS
 
-  /// @notice Seconds available to redeem once the cooldown period is fullfilled
-  uint256 public immutable UNSTAKE_WINDOW;
+    /// @notice Seconds available to redeem once the cooldown period is fullfilled
+    uint256 public immutable UNSTAKE_WINDOW;
 
-  /// @notice Address to pull from the rewards, needs to have approved this contract
-  address public immutable REWARDS_VAULT;
+    /// @notice Address to pull from the rewards, needs to have approved this contract
+    address public immutable REWARDS_VAULT;
 
-  mapping(address => uint256) public stakerRewardsToClaim;
-  mapping(address => uint256) public stakersCooldowns;
-  mapping (uint256=>uint256) public amountOfLockedRewards;
+    mapping(address => uint256) public stakerRewardsToClaim;
+    mapping(address => uint256) public stakersCooldowns;
+    mapping(address => uint256) public stakerRewardLockTime;
+    mapping(uint256 => uint256) public timestampToIndexOfUsers;
+    mapping(uint256 => uint256) public subAmountAfterLockTime;
 
-  //define variable for claim reward in 7 days
-  uint256[] public lockTimestampOfUsers;
-  mapping (address=>uint256) public stakerRewardLockTime;
-  mapping (uint256=>uint256) public timestampToIndexOfUsers;
-  mapping (uint256=>uint256) public subAmountAfterLockTime;
+    uint256 public  TOTAL_USERS;
 
-  // event
-  event Staked(address indexed from, address indexed onBehalfOf, uint256 amount);
-  event Redeem(address indexed from, address indexed to, uint256 amount);
+    uint256[] lockTimestampOfUsers;
+    uint256 public TOTAL_STAKED; // except users whose staking ended
 
-  event RewardsAccrued(address user, uint256 amount);
-  event RewardsClaimed(address indexed from, address indexed to, uint256 amount);
+    uint256 private timestampsStartIndex;
 
-  event Cooldown(address indexed user);
-
-  constructor(
-    IERC20 stakedToken,
-    IERC20 rewardToken,
-    uint256 cooldownSeconds,
-    uint256 unstakeWindow,
-    address rewardsVault,
-    address emissionManager,
-    uint128 distributionDuration,
-    string memory name,
-    string memory symbol,
-    uint8 decimals
-  )
-    public
-    ERC20WithSnapshot(name, symbol, decimals)
-    AaveDistributionManager(emissionManager, distributionDuration)
-  {
-    STAKED_TOKEN = stakedToken;
-    REWARD_TOKEN = rewardToken;
-    COOLDOWN_SECONDS = cooldownSeconds;
-    UNSTAKE_WINDOW = unstakeWindow;
-    REWARDS_VAULT = rewardsVault;
-  }
-
-  /**
-   * @dev Called by the proxy contract
-   **/
-  function initialize(
-    ITransferHook aaveGovernance,
-    string calldata name,
-    string calldata symbol,
-    uint8 decimals
-  ) external initializer {
-    _setName(name);
-    _setSymbol(symbol);
-    _setDecimals(decimals);
-    _setAaveGovernance(aaveGovernance);
-  }
-
-
-  function stake(address onBehalfOf, uint256 amount) external override {
-    require(amount != 0, 'INVALID_ZERO_AMOUNT');
-    require(stakerRewardLockTime[msg.sender] == 0, 'YOU ARE STAKED');
-
-    uint256 balanceOfUser = balanceOf(onBehalfOf);
-
-    // add to TOTAL_USERS
-    TOTAL_USERS = TOTAL_USERS.add(1);
-
-    uint256 accruedRewards =
-      _updateUserAssetInternal(onBehalfOf, address(this), balanceOfUser, TOTAL_STAKED);
-    if (accruedRewards != 0) {
-      emit RewardsAccrued(onBehalfOf, accruedRewards);
-      stakerRewardsToClaim[onBehalfOf] = stakerRewardsToClaim[onBehalfOf].add(accruedRewards);
-    }
-
-    uint256 lockTimestamp =  block.timestamp.add(LOCK_TIME);
-    // add time lock to map 
-    stakerRewardLockTime[msg.sender] = lockTimestamp;
-
-    // push time lock to array
-    lockTimestampOfUsers.push(lockTimestamp);
-
-     //add to TOTAL_STAKED
-    TOTAL_STAKED = TOTAL_STAKED.add(amount);
-
-    // amount after lock time, need sub
-    subAmountAfterLockTime[lockTimestamp] = subAmountAfterLockTime[lockTimestamp].add(amount);
-
-    stakersCooldowns[onBehalfOf] = getNextCooldownTimestamp(0, amount, onBehalfOf, balanceOfUser);
-
-    
-    _mint(onBehalfOf, amount);
-    IERC20(STAKED_TOKEN).safeTransferFrom(msg.sender, address(this), amount);    
-    emit Staked(msg.sender, onBehalfOf, amount);
-  }
-
-  /**
-   * @dev Redeems staked tokens, and stop earning rewards
-   * @param to Address to redeem to
-   * @param amount Amount to redeem
-   **/
-  function redeem(address to, uint256 amount) external override {
-    require(amount != 0, 'INVALID_ZERO_AMOUNT');
-    //solium-disable-next-line
-    uint256 cooldownStartTimestamp = stakersCooldowns[msg.sender];
-    require(
-      block.timestamp > cooldownStartTimestamp.add(COOLDOWN_SECONDS),
-      'INSUFFICIENT_COOLDOWN'
+    event Staked(
+        address indexed from,
+        address indexed onBehalfOf,
+        uint256 amount
     );
-    require(
-      block.timestamp.sub(cooldownStartTimestamp.add(COOLDOWN_SECONDS)) <= UNSTAKE_WINDOW,
-      'UNSTAKE_WINDOW_FINISHED'
+    event Redeem(address indexed from, address indexed to, uint256 amount);
+
+    event RewardsAccrued(address user, uint256 amount);
+    event RewardsClaimed(
+        address indexed from,
+        address indexed to,
+        uint256 amount
     );
-    uint256 balanceOfMessageSender = balanceOf(msg.sender);
 
-    uint256 amountToRedeem = (amount > balanceOfMessageSender) ? balanceOfMessageSender : amount;
+    event Cooldown(address indexed user);
 
-    _updateCurrentUnclaimedRewards(msg.sender, balanceOfMessageSender, true);
-
-    _burn(msg.sender, amountToRedeem);
-
-    if (balanceOfMessageSender.sub(amountToRedeem) == 0) {
-      stakersCooldowns[msg.sender] = 0;
+    constructor(
+        IERC20 stakedToken,
+        IERC20 rewardToken,
+        uint256 cooldownSeconds,
+        uint256 unstakeWindow,
+        address rewardsVault,
+        address emissionManager,
+        uint128 distributionDuration,
+        string memory name,
+        string memory symbol,
+        uint8 decimals
+    )
+        public
+        ERC20WithSnapshot(name, symbol, decimals)
+        AaveDistributionManager(emissionManager, distributionDuration)
+    {
+        STAKED_TOKEN = stakedToken;
+        REWARD_TOKEN = rewardToken;
+        COOLDOWN_SECONDS = cooldownSeconds;
+        UNSTAKE_WINDOW = unstakeWindow;
+        REWARDS_VAULT = rewardsVault;
     }
 
-    IERC20(STAKED_TOKEN).safeTransfer(to, amountToRedeem);
-
-    delete stakerRewardLockTime[msg.sender];
-    
-    emit Redeem(msg.sender, to, amountToRedeem);
-  }
-
-  /**
-   * @dev Activates the cooldown period to unstake
-   * - It can't be called if the user is not staking
-   **/
-  function cooldown() external override {
-    require(balanceOf(msg.sender) != 0, 'INVALID_BALANCE_ON_COOLDOWN');
-    //solium-disable-next-line
-    stakersCooldowns[msg.sender] = block.timestamp;
-
-    emit Cooldown(msg.sender);
-  }
-
-  /**
-   * @dev Claims an `amount` of `REWARD_TOKEN` to the address `to`
-   * @param to Address to stake for
-   * @param amount Amount to stake
-   **/
-  function claimRewards(address to, uint256 amount) external override {
-    uint256 newTotalRewards =
-      _updateCurrentUnclaimedRewards(msg.sender, balanceOf(msg.sender), false);
-    uint256 amountToClaim = (amount == type(uint256).max) ? newTotalRewards : amount;
-
-    stakerRewardsToClaim[msg.sender] = newTotalRewards.sub(amountToClaim, 'INVALID_AMOUNT');
-
-    REWARD_TOKEN.safeTransferFrom(REWARDS_VAULT, to, amountToClaim);
-
-    emit RewardsClaimed(msg.sender, to, amountToClaim);
-  }
-
-  /**
-   * @dev Internal ERC20 _transfer of the tokenized staked tokens
-   * @param from Address to transfer from
-   * @param to Address to transfer to
-   * @param amount Amount to transfer
-   **/
-  function _transfer(
-    address from,
-    address to,
-    uint256 amount
-  ) internal override {
-    uint256 balanceOfFrom = balanceOf(from);
-    // Sender
-    _updateCurrentUnclaimedRewards(from, balanceOfFrom, true);
-
-    // Recipient
-    if (from != to) {
-      uint256 balanceOfTo = balanceOf(to);
-      _updateCurrentUnclaimedRewards(to, balanceOfTo, true);
-
-      uint256 previousSenderCooldown = stakersCooldowns[from];
-      stakersCooldowns[to] = getNextCooldownTimestamp(
-        previousSenderCooldown,
-        amount,
-        to,
-        balanceOfTo
-      );
-      // if cooldown was set and whole balance of sender was transferred - clear cooldown
-      if (balanceOfFrom == amount && previousSenderCooldown != 0) {
-        stakersCooldowns[from] = 0;
-      }
+    /**
+     * @dev Called by the proxy contract
+     **/
+    function initialize(
+        ITransferHook aaveGovernance,
+        string calldata name,
+        string calldata symbol,
+        uint8 decimals
+    ) external initializer {
+        _setName(name);
+        _setSymbol(symbol);
+        _setDecimals(decimals);
+        _setAaveGovernance(aaveGovernance);
     }
 
-    super._transfer(from, to, amount);
-  }
+    function stake(address onBehalfOf, uint256 amount) external override {
+        require(amount != 0, "INVALID_ZERO_AMOUNT");
+        uint256 balanceOfUser = balanceOf(onBehalfOf);
+        require(stakerRewardLockTime[msg.sender] == 0, "USER_STAKED");
 
-  // /**
-  //  * @dev Updates the user state related with his accrued rewards
-  //  * @param user Address of the user
-  //  * @param userBalance The current balance of the user
-  //  * @param updateStorage Boolean flag used to update or not the stakerRewardsToClaim of the user
-  //  * @return The unclaimed rewards that were added to the total accrued
-  //  **/
+         TOTAL_USERS =  TOTAL_USERS.add(1);
 
-   function _getEmissionPerSecondByTotalUsers(uint256 totalUsers,uint256 A,uint256 B,uint256 C,uint256 D) public pure returns(uint128){
-   
-
-    uint256 numerator = totalUsers.mul(A);
-    uint256 denominator = (B.mul(totalUsers).mul(totalUsers)).add(C);
-
-    uint256 emissionPerSecond = (numerator.div(denominator)).add(D);
-
-    return uint128(emissionPerSecond);
-
-   }
-
-  function _updateAssetStateInternal(
-    address underlyingAsset,
-    AssetData storage assetConfig,
-    uint256 totalStaked,
-    uint256 A,
-    uint256 B,
-    uint256 C,
-    uint256 D
-  ) internal override returns (uint256){
-   uint256 oldIndex = assetConfig.index;
-   uint128 lastUpdateTimestamp = assetConfig.lastUpdateTimestamp;
-
-    //update emissionPerSecond
-     assetConfig.emissionPerSecond = _getEmissionPerSecondByTotalUsers(TOTAL_USERS,A,B,C,D);
-
-     for (uint256 i = 0; i < lockTimestampOfUsers.length; i++) {
-        if (
-            lockTimestampOfUsers[i] <= block.timestamp &&
-            timestampToIndexOfUsers[lockTimestampOfUsers[i]] == 0
-        ) {
-            timestampToIndexOfUsers[lockTimestampOfUsers[i]] =
-             _getAssetIndexWithLockTimestamp(
-                oldIndex, 
-                assetConfig.emissionPerSecond, 
-                lastUpdateTimestamp, 
-                TOTAL_STAKED,
-                lockTimestampOfUsers[i]
-            );
-            
-           //after pass lock time will sub amount of total staked
-            TOTAL_STAKED = TOTAL_STAKED.sub(subAmountAfterLockTime[lockTimestampOfUsers[i]]);
-
-            //sub the total user
-            TOTAL_USERS = TOTAL_USERS.sub(1);
-
-            if (lockTimestampOfUsers[i] > block.timestamp) break;
+        uint256 accruedRewards = _updateUserAssetInternal(
+            onBehalfOf,
+            address(this),
+            balanceOfUser,
+            TOTAL_STAKED
+        );
+        if (accruedRewards != 0) {
+            emit RewardsAccrued(onBehalfOf, accruedRewards);
+            stakerRewardsToClaim[onBehalfOf] = stakerRewardsToClaim[onBehalfOf]
+                .add(accruedRewards);
         }
-      }
 
-    if (block.timestamp == lastUpdateTimestamp) {
-      return oldIndex;
-    }
-    uint256 newIndex =
-      _getAssetIndex(oldIndex, assetConfig.emissionPerSecond, lastUpdateTimestamp, totalStaked);
+        stakersCooldowns[onBehalfOf] = getNextCooldownTimestamp(
+            0,
+            amount,
+            onBehalfOf,
+            balanceOfUser
+        );
 
-    if (newIndex != oldIndex) {
-      assetConfig.index = newIndex;
-      emit AssetIndexUpdated(underlyingAsset, newIndex);
-    }
+        _mint(onBehalfOf, amount);
+        IERC20(STAKED_TOKEN).safeTransferFrom(
+            msg.sender,
+            address(this),
+            amount
+        );
 
-    assetConfig.lastUpdateTimestamp = uint128(block.timestamp);
+        uint256 lockEndTimestamp = block.timestamp.add(LOCK_TIME);
 
-    return newIndex;
-}
+        stakerRewardLockTime[msg.sender] = lockEndTimestamp;
 
-function _updateUserAssetInternal(
-    address user,
-    address asset,
-    uint256 stakedByUser,
-    uint256 totalStaked
-  ) internal override returns (uint256){
-    AssetData storage assetData = assets[asset];
-    uint256 userIndex = assetData.users[user];
-    uint256 accruedRewards = 0;
+        lockTimestampOfUsers.push(lockEndTimestamp);
 
-    uint256 newIndex=_updateAssetStateInternal(
-      asset, 
-      assetData, 
-      totalStaked,
-      assetData.A,
-      assetData.B,
-      assetData.C,
-      assetData.D);
+        TOTAL_STAKED = TOTAL_STAKED.add(amount);
 
-    if (
-      stakerRewardLockTime[user] != 0 &&
-      block.timestamp > lockTimestampOfUsers[userIndex]
-    ) {
-      newIndex = timestampToIndexOfUsers[lockTimestampOfUsers[userIndex]];
+        subAmountAfterLockTime[lockEndTimestamp] = subAmountAfterLockTime[lockEndTimestamp].add(amount);
+
+        emit Staked(msg.sender, onBehalfOf, amount);
     }
 
-    if (userIndex != newIndex) {
-      if (stakedByUser != 0) {
-        accruedRewards = _getRewards(stakedByUser, newIndex, userIndex);
-      }
+    /**
+     * @dev Redeems staked tokens, and stop earning rewards
+     * @param to Address to redeem to
+     * @param amount Amount to redeem
+     **/
+    function redeem(address to, uint256 amount) external override {
+        require(amount != 0, "INVALID_ZERO_AMOUNT");
+        //solium-disable-next-line
+        uint256 cooldownStartTimestamp = stakersCooldowns[msg.sender];
+        require(
+            block.timestamp > cooldownStartTimestamp.add(COOLDOWN_SECONDS),
+            "INSUFFICIENT_COOLDOWN"
+        );
+        require(
+            block.timestamp.sub(cooldownStartTimestamp.add(COOLDOWN_SECONDS)) <=
+                UNSTAKE_WINDOW,
+            "UNSTAKE_WINDOW_FINISHED"
+        );
+        uint256 balanceOfMessageSender = balanceOf(msg.sender);
 
-      assetData.users[user] = newIndex;
-      emit UserIndexUpdated(user, asset, newIndex);
+        uint256 amountToRedeem = (amount > balanceOfMessageSender)
+            ? balanceOfMessageSender
+            : amount;
+
+        _updateCurrentUnclaimedRewards(
+            msg.sender,
+            balanceOfMessageSender,
+            true
+        );
+
+        _burn(msg.sender, amountToRedeem);
+
+        if (balanceOfMessageSender.sub(amountToRedeem) == 0) {
+            stakersCooldowns[msg.sender] = 0;
+        }
+
+        IERC20(STAKED_TOKEN).safeTransfer(to, amountToRedeem);
+
+        delete stakerRewardLockTime[msg.sender];
+
+        emit Redeem(msg.sender, to, amountToRedeem);
     }
 
-    return accruedRewards;
-  }
+    /**
+     * @dev Activates the cooldown period to unstake
+     * - It can't be called if the user is not staking
+     **/
+    function cooldown() external override {
+        require(balanceOf(msg.sender) != 0, "INVALID_BALANCE_ON_COOLDOWN");
+        //solium-disable-next-line
+        stakersCooldowns[msg.sender] = block.timestamp;
 
-  function _getAssetIndexWithLockTimestamp(    
-    uint256 currentIndex,
-    uint256 emissionPerSecond,
-    uint128 lastUpdateTimestamp,
-    uint256 totalBalance,
-    uint256 lockTimestamp
-  )internal view returns(uint256){
-    if (
-      emissionPerSecond == 0 ||
-      totalBalance == 0 ||
-      lastUpdateTimestamp == lockTimestamp ||
-      lastUpdateTimestamp >= DISTRIBUTION_END
-    ) {
-      return currentIndex;
-    }
-    uint256 currentTimestamp =
-      lockTimestamp > DISTRIBUTION_END ? DISTRIBUTION_END : lockTimestamp;
-    uint256 timeDelta = currentTimestamp.sub(lastUpdateTimestamp);
-    return
-      emissionPerSecond.mul(timeDelta).mul(10**uint256(PRECISION)).div(totalBalance).add(
-        currentIndex
-      );
-
-  }
-
-  function _updateCurrentUnclaimedRewards(
-    address user,
-    uint256 userBalance,
-    bool updateStorage
-  ) internal returns (uint256) {
-    uint256 accruedRewards =
-      _updateUserAssetInternal(user, address(this), userBalance, TOTAL_STAKED);
-    uint256 unclaimedRewards = stakerRewardsToClaim[user].add(accruedRewards);
-
-    if (accruedRewards != 0) {
-      if (updateStorage) {
-        stakerRewardsToClaim[user] = unclaimedRewards;
-      }
-      emit RewardsAccrued(user, accruedRewards);
+        emit Cooldown(msg.sender);
     }
 
-    return unclaimedRewards;
-  }
+    /**
+     * @dev Claims an `amount` of `REWARD_TOKEN` to the address `to`
+     * @param to Address to stake for
+     * @param amount Amount to stake
+     **/
+    function claimRewards(address to, uint256 amount) external override {
+        uint256 newTotalRewards = _updateCurrentUnclaimedRewards(
+            msg.sender,
+            balanceOf(msg.sender),
+            false
+        );
+        uint256 amountToClaim = (amount == type(uint256).max)
+            ? newTotalRewards
+            : amount;
 
-  /**
-   * @dev Calculates the how is gonna be a new cooldown timestamp depending on the sender/receiver situation
-   *  - If the timestamp of the sender is "better" or the timestamp of the recipient is 0, we take the one of the recipient
-   *  - Weighted average of from/to cooldown timestamps if:
-   *    # The sender doesn't have the cooldown activated (timestamp 0).
-   *    # The sender timestamp is expired
-   *    # The sender has a "worse" timestamp
-   *  - If the receiver's cooldown timestamp expired (too old), the next is 0
-   * @param fromCooldownTimestamp Cooldown timestamp of the sender
-   * @param amountToReceive Amount
-   * @param toAddress Address of the recipient
-   * @param toBalance Current balance of the receiver
-   * @return The new cooldown timestamp
-   **/
-  function getNextCooldownTimestamp(
-    uint256 fromCooldownTimestamp,
-    uint256 amountToReceive,
-    address toAddress,
-    uint256 toBalance
-  ) public view returns (uint256) {
-    uint256 toCooldownTimestamp = stakersCooldowns[toAddress];
-    if (toCooldownTimestamp == 0) {
-      return 0;
+        stakerRewardsToClaim[msg.sender] = newTotalRewards.sub(
+            amountToClaim,
+            "INVALID_AMOUNT"
+        );
+
+        REWARD_TOKEN.safeTransferFrom(REWARDS_VAULT, to, amountToClaim);
+
+        emit RewardsClaimed(msg.sender, to, amountToClaim);
     }
 
-    uint256 minimalValidCooldownTimestamp =
-      block.timestamp.sub(COOLDOWN_SECONDS).sub(UNSTAKE_WINDOW);
+    /**
+     * @dev Internal ERC20 _transfer of the tokenized staked tokens
+     * @param from Address to transfer from
+     * @param to Address to transfer to
+     * @param amount Amount to transfer
+     **/
+    function _transfer(
+        address from,
+        address to,
+        uint256 amount
+    ) internal override {
+        uint256 balanceOfFrom = balanceOf(from);
+        // Sender
+        _updateCurrentUnclaimedRewards(from, balanceOfFrom, true);
+        // Recipient
+        if (from != to) {
+            uint256 balanceOfTo = balanceOf(to);
+            _updateCurrentUnclaimedRewards(to, balanceOfTo, true);
 
-    if (minimalValidCooldownTimestamp > toCooldownTimestamp) {
-      toCooldownTimestamp = 0;
-    } else {
-      uint256 fromCooldownTimestamp =
-        (minimalValidCooldownTimestamp > fromCooldownTimestamp)
-          ? block.timestamp
-          : fromCooldownTimestamp;
+            uint256 previousSenderCooldown = stakersCooldowns[from];
+            stakersCooldowns[to] = getNextCooldownTimestamp(
+                previousSenderCooldown,
+                amount,
+                to,
+                balanceOfTo
+            );
+            // if cooldown was set and whole balance of sender was transferred - clear cooldown
+            if (balanceOfFrom == amount && previousSenderCooldown != 0) {
+                stakersCooldowns[from] = 0;
+            }
+        }
 
-      if (fromCooldownTimestamp < toCooldownTimestamp) {
+        super._transfer(from, to, amount);
+    }
+
+    /**
+     * @dev Updates the user state related with his accrued rewards
+     * @param user Address of the user
+     * @param userBalance The current balance of the user
+     * @param updateStorage Boolean flag used to update or not the stakerRewardsToClaim of the user
+     * @return The unclaimed rewards that were added to the total accrued
+     **/
+    function _updateCurrentUnclaimedRewards(
+        address user,
+        uint256 userBalance,
+        bool updateStorage
+    ) internal returns (uint256) {
+        uint256 accruedRewards = _updateUserAssetInternal(
+            user,
+            address(this),
+            userBalance,
+            TOTAL_STAKED
+        );
+        uint256 unclaimedRewards = stakerRewardsToClaim[user].add(
+            accruedRewards
+        );
+
+        if (accruedRewards != 0) {
+            if (updateStorage) {
+                stakerRewardsToClaim[user] = unclaimedRewards;
+            }
+            emit RewardsAccrued(user, accruedRewards);
+        }
+
+        return unclaimedRewards;
+    }
+
+    // rewrite some functions
+    function _getEmissionPerSecond(uint256  totalUser)
+        internal
+        pure
+        returns (uint128)
+    {
+        uint256 A = 10000;
+        uint256 B = 1;
+        uint256 C = 5041;
+        uint256 D = 5;
+        uint256 numerator =  totalUser.mul(A);
+        uint256 denominator = (B.mul( totalUser).mul( totalUser)).add(C);
+        uint256 emissionPerSecond = (numerator.div(denominator)).add(D);
+
+        return uint128(emissionPerSecond);
+    }
+
+    function _updateAssetStateInternal(
+        address underlyingAsset,
+        AssetData storage assetConfig,
+        uint256 totalStaked
+    ) internal override returns (uint256) {
+        uint256 oldIndex = assetConfig.index;
+        uint128 lastUpdateTimestamp = assetConfig.lastUpdateTimestamp;
+
+        if (block.timestamp == lastUpdateTimestamp) {
+            return oldIndex;
+        }
+
+        // update emission/second
+        assetConfig.emissionPerSecond = _getEmissionPerSecond( TOTAL_USERS);
+
+        // update asset index,  TOTAL_USERS, current supply with timestamp
+        uint256 i;
+        for (i = timestampsStartIndex; i < lockTimestampOfUsers.length; i++) {
+            if (lockTimestampOfUsers[i] <= block.timestamp) {
+                timestampToIndexOfUsers[
+                    lockTimestampOfUsers[i]
+                ] = _getAssetIndexWithTimestamp(
+                    oldIndex,
+                    assetConfig.emissionPerSecond,
+                    lastUpdateTimestamp,
+                    totalStaked,
+                    lockTimestampOfUsers[i]
+                );
+
+                 TOTAL_USERS =  TOTAL_USERS.sub(1);
+                TOTAL_STAKED = TOTAL_STAKED.sub(
+                    subAmountAfterLockTime[lockTimestampOfUsers[i]]
+                );
+            } else {
+                break;
+            }
+        }
+        timestampsStartIndex = i;
+
+        uint256 newIndex = _getAssetIndex(
+            oldIndex,
+            assetConfig.emissionPerSecond,
+            lastUpdateTimestamp,
+            totalStaked
+        );
+
+        if (newIndex != oldIndex) {
+            assetConfig.index = newIndex;
+            emit AssetIndexUpdated(underlyingAsset, newIndex);
+        }
+
+        assetConfig.lastUpdateTimestamp = uint128(block.timestamp);
+
+        return newIndex;
+    }
+
+    function _getAssetIndexWithTimestamp(
+        uint256 currentIndex,
+        uint256 emissionPerSecond,
+        uint128 lastUpdateTimestamp,
+        uint256 totalBalance,
+        uint256 timestamp
+    ) internal view returns (uint256) {
+        if (
+            emissionPerSecond == 0 ||
+            totalBalance == 0 ||
+            lastUpdateTimestamp == timestamp ||
+            lastUpdateTimestamp >= DISTRIBUTION_END
+        ) {
+            return currentIndex;
+        }
+        uint256 currentTimestamp = timestamp > DISTRIBUTION_END
+            ? DISTRIBUTION_END
+            : timestamp;
+        uint256 timeDelta = currentTimestamp.sub(lastUpdateTimestamp);
+        return
+            emissionPerSecond
+                .mul(timeDelta)
+                .mul(10**uint256(PRECISION))
+                .div(totalBalance)
+                .add(currentIndex);
+    }
+
+    function _updateUserAssetInternal(
+        address user,
+        address asset,
+        uint256 stakedByUser,
+        uint256 totalStaked
+    ) internal override returns (uint256) {
+        AssetData storage assetData = assets[asset];
+        uint256 userIndex = assetData.users[user];
+        uint256 accruedRewards = 0;
+
+        uint256 newIndex = _updateAssetStateInternal(
+            asset,
+            assetData,
+            totalStaked
+        );
+        if (
+            stakerRewardLockTime[user] != 0 &&
+            stakerRewardLockTime[user] <= block.timestamp
+        ) {
+            newIndex = timestampToIndexOfUsers[stakerRewardLockTime[user]];
+        }
+
+        if (userIndex != newIndex) {
+            if (stakedByUser != 0) {
+                accruedRewards = _getRewards(stakedByUser, newIndex, userIndex);
+            }
+
+            assetData.users[user] = newIndex;
+            emit UserIndexUpdated(user, asset, newIndex);
+        }
+
+        return accruedRewards;
+    }
+
+    /**
+     * @dev Calculates the how is gonna be a new cooldown timestamp depending on the sender/receiver situation
+     *  - If the timestamp of the sender is "better" or the timestamp of the recipient is 0, we take the one of the recipient
+     *  - Weighted average of from/to cooldown timestamps if:
+     *    # The sender doesn't have the cooldown activated (timestamp 0).
+     *    # The sender timestamp is expired
+     *    # The sender has a "worse" timestamp
+     *  - If the receiver's cooldown timestamp expired (too old), the next is 0
+     * @param fromCooldownTimestamp Cooldown timestamp of the sender
+     * @param amountToReceive Amount
+     * @param toAddress Address of the recipient
+     * @param toBalance Current balance of the receiver
+     * @return The new cooldown timestamp
+     **/
+    function getNextCooldownTimestamp(
+        uint256 fromCooldownTimestamp,
+        uint256 amountToReceive,
+        address toAddress,
+        uint256 toBalance
+    ) public view returns (uint256) {
+        uint256 toCooldownTimestamp = stakersCooldowns[toAddress];
+        if (toCooldownTimestamp == 0) {
+            return 0;
+        }
+
+        uint256 minimalValidCooldownTimestamp = block
+            .timestamp
+            .sub(COOLDOWN_SECONDS)
+            .sub(UNSTAKE_WINDOW);
+
+        if (minimalValidCooldownTimestamp > toCooldownTimestamp) {
+            toCooldownTimestamp = 0;
+        } else {
+            uint256 fromCooldownTimestamp = (minimalValidCooldownTimestamp >
+                fromCooldownTimestamp)
+                ? block.timestamp
+                : fromCooldownTimestamp;
+
+            if (fromCooldownTimestamp < toCooldownTimestamp) {
+                return toCooldownTimestamp;
+            } else {
+                toCooldownTimestamp = (
+                    amountToReceive.mul(fromCooldownTimestamp).add(
+                        toBalance.mul(toCooldownTimestamp)
+                    )
+                ).div(amountToReceive.add(toBalance));
+            }
+        }
         return toCooldownTimestamp;
-      } else {
-        toCooldownTimestamp = (
-          amountToReceive.mul(fromCooldownTimestamp).add(toBalance.mul(toCooldownTimestamp))
-        )
-          .div(amountToReceive.add(toBalance));
-      }
     }
-    return toCooldownTimestamp;
-  }
 
-  /**
-   * @dev Return the total rewards pending to claim by an staker
-   * @param staker The staker address
-   * @return The rewards
-   */
-  function getTotalRewardsBalance(address staker) external view returns (uint256) {
-    AssetData storage assetConfig = assets[address(this)];
+    /**
+     * @dev Return the total rewards pending to claim by an staker
+     * @param staker The staker address
+     * @return The rewards
+     */
+    function getTotalRewardsBalance(address staker)
+        external
+        view
+        returns (uint256)
+    {
+        AssetData storage assetConfig = assets[address(this)];
+        uint256 assetIndex = timestampToIndexOfUsers[
+            stakerRewardLockTime[staker]
+        ] != 0
+            ? timestampToIndexOfUsers[stakerRewardLockTime[staker]]
+            : _getAssetIndexWithTimestamp(
+                assetConfig.index,
+                assetConfig.emissionPerSecond,
+                assetConfig.lastUpdateTimestamp,
+                TOTAL_STAKED,
+                block.timestamp <= stakerRewardLockTime[staker]
+                    ? block.timestamp
+                    : stakerRewardLockTime[staker]
+            );
+        uint256 accruedRewards = _getRewards(
+            balanceOf(staker),
+            assetIndex,
+            assetConfig.users[staker]
+        );
+        return stakerRewardsToClaim[staker].add(accruedRewards);
+    }
 
-    uint256 assetIndex = 
-    timestampToIndexOfUsers[stakerRewardLockTime[staker]] != 0
-    ? timestampToIndexOfUsers[stakerRewardLockTime[staker]]
-    : _getAssetIndexWithLockTimestamp(
-        assetConfig.index, 
-        assetConfig.emissionPerSecond, 
-        assetConfig.lastUpdateTimestamp, 
-        TOTAL_STAKED,
-        block.timestamp <= stakerRewardLockTime[staker] 
-        ? block.timestamp 
-        : stakerRewardLockTime[staker]
-      );
+    /**
+     * @dev returns the revision of the implementation contract
+     * @return The revision
+     */
+    function getRevision() internal pure override returns (uint256) {
+        return REVISION;
+    }
 
+    function getUserLockEndTimestamp(address user)
+        public
+        view
+        returns (uint256)
+    {
+        return stakerRewardLockTime[user];
+    }
 
-    uint256 accruedRewards =  _getRewards(balanceOf(staker), assetIndex, assetConfig.users[staker]);
-    return stakerRewardsToClaim[staker].add(accruedRewards);
-  }
-
-  /**
-   * @dev returns the revision of the implementation contract
-   * @return The revision
-   */
-  function getRevision() internal pure override returns (uint256) {
-    return REVISION;
-  }
+    function getAssetEmissionPerSecond() public view returns (uint256) {
+        return assets[address(this)].emissionPerSecond;
+    }
 }
