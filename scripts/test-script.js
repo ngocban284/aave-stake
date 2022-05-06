@@ -217,6 +217,52 @@ async function main() {
     "balance of user2:",
     utils.formatEther(await token.balanceOf(user2.address))
   );
+
+  //test auth emission per second
+  // console.log("\nemission per second :");
+  // const emissionPerSecondVault = await stkToken._getEmissionPerSecondVault(
+  //   900000,
+  //   50000,
+  //   1000000,
+  //   300000,
+  //   900000
+  // );
+  // console.log(emissionPerSecondVault);
+
+  //test u
+  console.log("\ntest u of function :");
+  const valueU = await stkToken._getEmissionPerSecondU(50000, 1000000, 300000);
+  console.log(valueU);
+
+  //test c
+  console.log("\ntest c of function :");
+  const valueC = await stkToken._getEmissionPerSecondC(
+    50000,
+    1000000,
+    300000,
+    900000
+  );
+  console.log(valueC);
+
+  //test b
+  console.log("\ntest b of function :");
+  const valueB = await stkToken._getEmissionPerSecondB(
+    50000,
+    1000000,
+    300000,
+    900000
+  );
+  console.log(valueB);
+
+  //test a
+  console.log("\ntest a of function :");
+  const valueA = await stkToken._getEmissionPerSecondA(
+    50000,
+    1000000,
+    300000,
+    900000
+  );
+  console.log(valueA);
 }
 
 main()

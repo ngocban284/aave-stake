@@ -11,6 +11,7 @@ import {VersionedInitializable} from "../utils/VersionedInitializable.sol";
 import {DistributionTypes} from "../lib/DistributionTypes.sol";
 import {AaveDistributionManager} from "./AaveDistributionManager.sol";
 import {SafeMath} from "../lib/SafeMath.sol";
+import {Math} from "../lib/Math.sol";
 
 /**
  * @title StakedToken
@@ -25,6 +26,7 @@ contract StakedToken is
 {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
+    using Math for uint256;
 
     uint256 public constant REVISION = 1;
 
@@ -299,7 +301,7 @@ contract StakedToken is
         return unclaimedRewards;
     }
 
-    // rewrite some functions
+    // // rewrite some functions
     function _getEmissionPerSecond(uint256  totalUser)
         internal
         pure
@@ -314,6 +316,59 @@ contract StakedToken is
         uint256 emissionPerSecond = (numerator.div(denominator)).add(D);
 
         return uint128(emissionPerSecond);
+    }
+
+    function _getEmissionPerSecondU(uint256 X,uint256 Y, uint256 Z)  public pure returns (uint256) {
+         uint256 k = ((Y.sub(Z)).mul(10**9)).div((Z.sub(X)));
+
+        return k.sub(((k.mul(k)).sub(10**18)).sqrt());
+    }
+
+    function _getEmissionPerSecondC(uint256 X,uint256 Y,uint256 Z,uint256 m)  public pure returns (uint256) {
+       uint256 numerator = (m.mul(10**9)).sub(10*9);
+       uint256 u = _getEmissionPerSecondU(X,Y,Z);
+       uint256 denominator = u.add(10**9);
+
+       return (numerator.div(denominator)).mul((numerator.div(denominator)));
+    }
+
+    function _getEmissionPerSecondB (uint256 X,uint256 Y,uint256 Z,uint256 m)  public pure returns (uint256) {
+        uint256 u = _getEmissionPerSecondU(X,Y,Z);
+
+        return (((m.sub(1)).mul(10**9)).mul(u)).div(u.add(10**9));
+    }
+
+    function _getEmissionPerSecondA (uint256 X,uint256 Y,uint256 Z,uint256 m)  public pure returns (uint256) {
+        uint256 u = _getEmissionPerSecondU(X,Y,Z);
+        uint256 numerator = (Y.sub(Z)).mul(2).mul(m.sub(1)).mul(10**9);
+        uint256 denominator = u.add(10**9);
+
+        return (numerator.div(denominator));
+    }
+    
+
+    function _getEmissionPerSecondVault(uint256 X,uint256 Y,uint256 Z,uint256 m,uint256  totalUsers) public pure  returns (uint128) {
+        
+        //define u
+        uint256 u = _getEmissionPerSecondU(X,Y,Z);
+
+        //define a
+        uint256 a = _getEmissionPerSecondA(X,Y,Z,m);
+
+        //define b
+        uint256 b = _getEmissionPerSecondB(X,Y,Z,m);
+
+        //define c
+        uint256 c = _getEmissionPerSecondC(X,Y,Z,m);
+
+        a = a.mul((totalUsers.sub(b)).sub(1));
+        totalUsers = (((totalUsers.sub(b).sub(1))**2).add(c));
+
+        //emmission per second 
+       uint256 emissionPerSecond = a.div(totalUsers).add(Z);
+
+        return uint128(emissionPerSecond);
+
     }
 
     function _updateAssetStateInternal(
@@ -331,7 +386,7 @@ contract StakedToken is
         // update emission/second
         assetConfig.emissionPerSecond = _getEmissionPerSecond( TOTAL_USERS);
 
-        // update asset index,  TOTAL_USERS, current supply with timestamp
+        // update asset index,  TOTAL_USERS, TOTAL_STAKED with timestamp
         uint256 i;
         for (i = timestampsStartIndex; i < lockTimestampOfUsers.length; i++) {
             if (lockTimestampOfUsers[i] <= block.timestamp) {
