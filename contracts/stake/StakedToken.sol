@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: agpl-3.0
 pragma solidity 0.7.5;
 pragma experimental ABIEncoderV2;
+import "hardhat/console.sol";
 
 import {IERC20} from "../interfaces/IERC20.sol";
 import {IStakedAave} from "../interfaces/IStakedAave.sol";
@@ -11,9 +12,7 @@ import {VersionedInitializable} from "../utils/VersionedInitializable.sol";
 import {DistributionTypes} from "../lib/DistributionTypes.sol";
 import {AaveDistributionManager} from "./AaveDistributionManager.sol";
 import {SafeMath} from "../lib/SafeMath.sol";
-import {Math} from "../lib/Math.sol";
-
-import "hardhat/console.sol";
+import {UniV2Math} from "../lib/UniV2Math.sol";
 
 /**
  * @title StakedToken
@@ -27,15 +26,21 @@ contract StakedToken is
     AaveDistributionManager
 {
     using SafeMath for uint256;
+    using UniV2Math for uint256;
     using SafeERC20 for IERC20;
-    using Math for uint256;
+
+    uint256 private _X;
+    uint256 private _Y;
+    uint256 private _Z;
+    uint256 private _m;
+    // graph for this formula: https://www.desmos.com/calculator/f3fjx7oqld
 
     uint256 public constant REVISION = 1;
 
     IERC20 public immutable STAKED_TOKEN;
     IERC20 public immutable REWARD_TOKEN;
     uint256 public immutable COOLDOWN_SECONDS;
-    uint256 public immutable LOCK_TIME = 7 * 24 * 3600; // LOCK IN 7 DAYS
+    uint256 public immutable LOCK_SECONDS = 7 * 24 * 3600; // LOCK IN 7 DAYS
 
     /// @notice Seconds available to redeem once the cooldown period is fullfilled
     uint256 public immutable UNSTAKE_WINDOW;
@@ -45,16 +50,18 @@ contract StakedToken is
 
     mapping(address => uint256) public stakerRewardsToClaim;
     mapping(address => uint256) public stakersCooldowns;
-    mapping(address => uint256) public stakerRewardLockTime;
-    mapping(uint256 => uint256) public timestampToIndexOfUsers;
-    mapping(uint256 => uint256) public subAmountAfterLockTime;
+    mapping(address => uint256) public stakersLockEndTimestamp;
+    mapping(uint256 => uint256) public indexAtTimestamp;
+    mapping(uint256 => uint256) public subSupplyAtTimestamp;
+    mapping(uint256 => uint256) public subUserCountAtTimestamp;
 
-    uint256 public  TOTAL_USERS;
+    uint256 public userCount;
 
-    uint256[] lockTimestampOfUsers;
-    uint256 public TOTAL_STAKED; // except users whose staking ended
+    uint256[] stakeEndTimestamps;
+    uint256 public currentSupply; // except users whose staking ended
 
     uint256 private timestampsStartIndex;
+    uint256 private subSupplyStartIndex;
 
     event Staked(
         address indexed from,
@@ -110,18 +117,57 @@ contract StakedToken is
         _setAaveGovernance(aaveGovernance);
     }
 
+    function _updateEmissionPerSecond() private {
+        assets[address(this)].emissionPerSecond = _getEmissionPerSecond(
+            _X,
+            _Y,
+            _Z,
+            _m,
+            userCount
+        );
+    }
+
+    function configureEmissionPerSecond(
+        uint256 X,
+        uint256 Y,
+        uint256 Z,
+        uint256 m
+    ) external {
+        require(msg.sender == EMISSION_MANAGER, "ONLY_EMISSION_MANAGER");
+        _X = X;
+        _Y = Y;
+        _Z = Z;
+        _m = m;
+        _updateEmissionPerSecond();
+    }
+
     function stake(address onBehalfOf, uint256 amount) external override {
         require(amount != 0, "INVALID_ZERO_AMOUNT");
         uint256 balanceOfUser = balanceOf(onBehalfOf);
-        require(stakerRewardLockTime[msg.sender] == 0, "USER_STAKED");
+        require(balanceOf(msg.sender) == 0, "USER_STAKED");
 
-         TOTAL_USERS =  TOTAL_USERS.add(1);
+        uint256 lockEndTimestamp = block.timestamp.add(LOCK_SECONDS);
+
+        stakersLockEndTimestamp[msg.sender] = lockEndTimestamp;
+
+        stakeEndTimestamps.push(lockEndTimestamp);
+
+        currentSupply = currentSupply.add(amount);
+        userCount = userCount.add(1);
+        _updateEmissionPerSecond();
+
+        subSupplyAtTimestamp[lockEndTimestamp] = subSupplyAtTimestamp[
+            lockEndTimestamp
+        ].add(amount);
+        subUserCountAtTimestamp[lockEndTimestamp] = subUserCountAtTimestamp[
+            lockEndTimestamp
+        ].add(1);
 
         uint256 accruedRewards = _updateUserAssetInternal(
             onBehalfOf,
             address(this),
             balanceOfUser,
-            TOTAL_STAKED
+            currentSupply
         );
         if (accruedRewards != 0) {
             emit RewardsAccrued(onBehalfOf, accruedRewards);
@@ -142,16 +188,6 @@ contract StakedToken is
             address(this),
             amount
         );
-
-        uint256 lockEndTimestamp = block.timestamp.add(LOCK_TIME);
-
-        stakerRewardLockTime[msg.sender] = lockEndTimestamp;
-
-        lockTimestampOfUsers.push(lockEndTimestamp);
-
-        TOTAL_STAKED = TOTAL_STAKED.add(amount);
-
-        subAmountAfterLockTime[lockEndTimestamp] = subAmountAfterLockTime[lockEndTimestamp].add(amount);
 
         emit Staked(msg.sender, onBehalfOf, amount);
     }
@@ -188,13 +224,24 @@ contract StakedToken is
 
         _burn(msg.sender, amountToRedeem);
 
+        uint256 lockEndTimestamp = stakersLockEndTimestamp[msg.sender];
+
         if (balanceOfMessageSender.sub(amountToRedeem) == 0) {
             stakersCooldowns[msg.sender] = 0;
+            userCount = userCount.sub(1);
+            _updateEmissionPerSecond();
+            subUserCountAtTimestamp[lockEndTimestamp] = subUserCountAtTimestamp[
+                lockEndTimestamp
+            ].sub(1);
         }
 
-        IERC20(STAKED_TOKEN).safeTransfer(to, amountToRedeem);
+        // delete lockEndTimestamp;
+        currentSupply = currentSupply.sub(amount);
+        subSupplyAtTimestamp[lockEndTimestamp] = subSupplyAtTimestamp[
+            lockEndTimestamp
+        ].sub(amount);
 
-        delete stakerRewardLockTime[msg.sender];
+        IERC20(STAKED_TOKEN).safeTransfer(to, amountToRedeem);
 
         emit Redeem(msg.sender, to, amountToRedeem);
     }
@@ -287,7 +334,7 @@ contract StakedToken is
             user,
             address(this),
             userBalance,
-            TOTAL_STAKED
+            currentSupply
         );
         uint256 unclaimedRewards = stakerRewardsToClaim[user].add(
             accruedRewards
@@ -303,88 +350,94 @@ contract StakedToken is
         return unclaimedRewards;
     }
 
-    // rewrite some functions
-    function _getEmissionPerSecond(uint256  totalUser)
-        internal
-        pure
-        returns (uint128)
-    {
-        uint256 A = 10000;
-        uint256 B = 1;
-        uint256 C = 5041;
-        uint256 D = 5;
-        uint256 numerator =  totalUser.mul(A);
-        uint256 denominator = (B.mul( totalUser).mul( totalUser)).add(C);
-        uint256 emissionPerSecond = (numerator.div(denominator)).add(D);
-
-        return uint128(emissionPerSecond);
-    }
-
-    function _getEmissionPerSecondU(uint256 X,uint256 Y, uint256 Z)  public pure returns (uint256) {
-         uint256 k = ((Y.sub(Z)).mul(10**9)).div((Z.sub(X)));
+    // formula for emission/s
+    function _getCoefficientU(
+        uint256 X,
+        uint256 Y,
+        uint256 Z
+    ) public pure returns (uint256) {
+        uint256 k = ((Y.sub(Z)).mul(10**9)).div((Z.sub(X)));
 
         return k.sub(((k.mul(k)).sub(10**18)).sqrt());
     }
 
-    function _getEmissionPerSecondC(uint256 X,uint256 Y,uint256 Z,uint256 m)  public pure returns (uint256) {
-       uint256 numerator = (m.mul(10**9)).sub(10*9);
-       uint256 u = _getEmissionPerSecondU(X,Y,Z);
-       uint256 denominator = u.add(10**9);
+    function _getCoefficientC(
+        uint256 X,
+        uint256 Y,
+        uint256 Z,
+        uint256 m
+    ) public pure returns (uint256) {
+        uint256 numerator = (m.mul(10**9)).sub(10 * 9);
+        uint256 u = _getCoefficientU(X, Y, Z);
+        uint256 denominator = u.add(10**9);
 
-       return (numerator.div(denominator)).mul((numerator.div(denominator)));
+        return (numerator.div(denominator)).mul((numerator.div(denominator)));
     }
 
-    function _getEmissionPerSecondB (uint256 X,uint256 Y,uint256 Z,uint256 m)  public pure returns (uint256) {
-        uint256 u = _getEmissionPerSecondU(X,Y,Z);
+    function _getCoefficientB(
+        uint256 X,
+        uint256 Y,
+        uint256 Z,
+        uint256 m
+    ) public pure returns (uint256) {
+        uint256 u = _getCoefficientU(X, Y, Z);
 
         return ((m.sub(1)).mul(u)).div(u.add(10**9));
     }
 
-    function _getEmissionPerSecondA (uint256 X,uint256 Y,uint256 Z,uint256 m)  public pure returns (uint256) {
-        uint256 u = _getEmissionPerSecondU(X,Y,Z);
+    function _getCoefficientA(
+        uint256 X,
+        uint256 Y,
+        uint256 Z,
+        uint256 m
+    ) public pure returns (uint256) {
+        uint256 u = _getCoefficientU(X, Y, Z);
         uint256 numerator = (Y.sub(Z)).mul(2).mul(m.sub(1)).mul(10**9);
         uint256 denominator = u.add(10**9);
 
         return (numerator.div(denominator));
     }
-    
 
-    function _getEmissionPerSecondVault(uint256 X,uint256 Y,uint256 Z,uint256 m,uint256 totalUsers) public view  returns (uint128) {
-        
+    function _getEmissionPerSecond(
+        uint256 X,
+        uint256 Y,
+        uint256 Z,
+        uint256 m,
+        uint256 userCount
+    ) public pure returns (uint128) {
         //define u
-        uint256 u = _getEmissionPerSecondU(X,Y,Z);
+        uint256 u = _getCoefficientU(X, Y, Z);
 
         //define a
-        uint256 a = _getEmissionPerSecondA(X,Y,Z,m);
+        uint256 a = _getCoefficientA(X, Y, Z, m);
 
         //define b
-        uint256 b = _getEmissionPerSecondB(X,Y,Z,m);
+        uint256 b = _getCoefficientB(X, Y, Z, m);
 
         //define c
-        uint256 c = _getEmissionPerSecondC(X,Y,Z,m);
+        uint256 c = _getCoefficientC(X, Y, Z, m);
 
         uint256 numerator;
-        if (totalUsers > b.add(1)) {
-            numerator  = a.mul((totalUsers).sub(b).sub(1));
-        }else{
-            a.mul((b.add(1)).sub(totalUsers));
+        if (userCount > b.add(1)) {
+            numerator = a.mul((userCount).sub(b).sub(1));
+        } else {
+            a.mul((b.add(1)).sub(userCount));
         }
         uint256 denominator;
-        if (totalUsers > b.add(1)) {
-            denominator = (((totalUsers).sub(b).sub(1))**2).add(c);
-        }else{
-            denominator = (((b.add(1)).sub(totalUsers))**2).add(c);
+        if (userCount > b.add(1)) {
+            denominator = (((userCount).sub(b).sub(1))**2).add(c);
+        } else {
+            denominator = (((b.add(1)).sub(userCount))**2).add(c);
         }
-        
 
-        // //emmission per second 
+        // //emmission per second
         // //uint128((numerator.div(denominator)).add(Z.mul(10**9)))
 
         // console.log(  (numerator.div(denominator)).add(Z.mul(10**9)) );
         return uint128((numerator.div(denominator)).add(Z));
-
     }
 
+    // updated function
     function _updateAssetStateInternal(
         address underlyingAsset,
         AssetData storage assetConfig,
@@ -397,26 +450,23 @@ contract StakedToken is
             return oldIndex;
         }
 
-        // update emission/second
-        assetConfig.emissionPerSecond = _getEmissionPerSecond( TOTAL_USERS);
-
-        // update asset index,  TOTAL_USERS, TOTAL_STAKED with timestamp
+        // update asset index, usercount, current supply with timestamp
         uint256 i;
-        for (i = timestampsStartIndex; i < lockTimestampOfUsers.length; i++) {
-            if (lockTimestampOfUsers[i] <= block.timestamp) {
-                timestampToIndexOfUsers[
-                    lockTimestampOfUsers[i]
-                ] = _getAssetIndexWithTimestamp(
+        for (i = timestampsStartIndex; i < stakeEndTimestamps.length; i++) {
+            uint256 timestamp = stakeEndTimestamps[i];
+            if (timestamp <= block.timestamp) {
+                indexAtTimestamp[timestamp] = _getAssetIndexWithTimestamp(
                     oldIndex,
                     assetConfig.emissionPerSecond,
                     lastUpdateTimestamp,
                     totalStaked,
-                    lockTimestampOfUsers[i]
+                    timestamp
                 );
 
-                 TOTAL_USERS =  TOTAL_USERS.sub(1);
-                TOTAL_STAKED = TOTAL_STAKED.sub(
-                    subAmountAfterLockTime[lockTimestampOfUsers[i]]
+                userCount = userCount.sub(subUserCountAtTimestamp[timestamp]);
+                _updateEmissionPerSecond();
+                currentSupply = currentSupply.sub(
+                    subSupplyAtTimestamp[timestamp]
                 );
             } else {
                 break;
@@ -428,7 +478,7 @@ contract StakedToken is
             oldIndex,
             assetConfig.emissionPerSecond,
             lastUpdateTimestamp,
-            totalStaked
+            currentSupply
         );
 
         if (newIndex != oldIndex) {
@@ -484,10 +534,10 @@ contract StakedToken is
             totalStaked
         );
         if (
-            stakerRewardLockTime[user] != 0 &&
-            stakerRewardLockTime[user] <= block.timestamp
+            stakersLockEndTimestamp[user] != 0 &&
+            stakersLockEndTimestamp[user] <= block.timestamp
         ) {
-            newIndex = timestampToIndexOfUsers[stakerRewardLockTime[user]];
+            newIndex = indexAtTimestamp[stakersLockEndTimestamp[user]];
         }
 
         if (userIndex != newIndex) {
@@ -564,18 +614,18 @@ contract StakedToken is
         returns (uint256)
     {
         AssetData storage assetConfig = assets[address(this)];
-        uint256 assetIndex = timestampToIndexOfUsers[
-            stakerRewardLockTime[staker]
+        uint256 assetIndex = indexAtTimestamp[
+            stakersLockEndTimestamp[staker]
         ] != 0
-            ? timestampToIndexOfUsers[stakerRewardLockTime[staker]]
+            ? indexAtTimestamp[stakersLockEndTimestamp[staker]]
             : _getAssetIndexWithTimestamp(
                 assetConfig.index,
                 assetConfig.emissionPerSecond,
                 assetConfig.lastUpdateTimestamp,
-                TOTAL_STAKED,
-                block.timestamp <= stakerRewardLockTime[staker]
+                currentSupply,
+                block.timestamp <= stakersLockEndTimestamp[staker]
                     ? block.timestamp
-                    : stakerRewardLockTime[staker]
+                    : stakersLockEndTimestamp[staker]
             );
         uint256 accruedRewards = _getRewards(
             balanceOf(staker),
@@ -598,7 +648,7 @@ contract StakedToken is
         view
         returns (uint256)
     {
-        return stakerRewardLockTime[user];
+        return stakersLockEndTimestamp[user];
     }
 
     function getAssetEmissionPerSecond() public view returns (uint256) {

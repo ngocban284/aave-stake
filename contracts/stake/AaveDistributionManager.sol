@@ -13,7 +13,6 @@ import {IAaveDistributionManager} from "../interfaces/IAaveDistributionManager.s
  **/
 contract AaveDistributionManager is IAaveDistributionManager {
     using SafeMath for uint256;
-    
 
     struct AssetData {
         uint128 emissionPerSecond;
