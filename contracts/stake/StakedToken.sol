@@ -13,6 +13,8 @@ import {AaveDistributionManager} from "./AaveDistributionManager.sol";
 import {SafeMath} from "../lib/SafeMath.sol";
 import {Math} from "../lib/Math.sol";
 
+import "hardhat/console.sol";
+
 /**
  * @title StakedToken
  * @notice Contract to stake Aave token, tokenize the position and get rewards, inheriting from a distribution manager contract
@@ -301,7 +303,7 @@ contract StakedToken is
         return unclaimedRewards;
     }
 
-    // // rewrite some functions
+    // rewrite some functions
     function _getEmissionPerSecond(uint256  totalUser)
         internal
         pure
@@ -335,7 +337,7 @@ contract StakedToken is
     function _getEmissionPerSecondB (uint256 X,uint256 Y,uint256 Z,uint256 m)  public pure returns (uint256) {
         uint256 u = _getEmissionPerSecondU(X,Y,Z);
 
-        return (((m.sub(1)).mul(10**9)).mul(u)).div(u.add(10**9));
+        return ((m.sub(1)).mul(u)).div(u.add(10**9));
     }
 
     function _getEmissionPerSecondA (uint256 X,uint256 Y,uint256 Z,uint256 m)  public pure returns (uint256) {
@@ -347,7 +349,7 @@ contract StakedToken is
     }
     
 
-    function _getEmissionPerSecondVault(uint256 X,uint256 Y,uint256 Z,uint256 m,uint256  totalUsers) public pure  returns (uint128) {
+    function _getEmissionPerSecondVault(uint256 X,uint256 Y,uint256 Z,uint256 m,uint256 totalUsers) public view  returns (uint128) {
         
         //define u
         uint256 u = _getEmissionPerSecondU(X,Y,Z);
@@ -361,13 +363,25 @@ contract StakedToken is
         //define c
         uint256 c = _getEmissionPerSecondC(X,Y,Z,m);
 
-        a = a.mul((totalUsers.sub(b)).sub(1));
-        totalUsers = (((totalUsers.sub(b).sub(1))**2).add(c));
+        uint256 numerator;
+        if (totalUsers > b.add(1)) {
+            numerator  = a.mul((totalUsers).sub(b).sub(1));
+        }else{
+            a.mul((b.add(1)).sub(totalUsers));
+        }
+        uint256 denominator;
+        if (totalUsers > b.add(1)) {
+            denominator = (((totalUsers).sub(b).sub(1))**2).add(c);
+        }else{
+            denominator = (((b.add(1)).sub(totalUsers))**2).add(c);
+        }
+        
 
-        //emmission per second 
-       uint256 emissionPerSecond = a.div(totalUsers).add(Z);
+        // //emmission per second 
+        // //uint128((numerator.div(denominator)).add(Z.mul(10**9)))
 
-        return uint128(emissionPerSecond);
+        // console.log(  (numerator.div(denominator)).add(Z.mul(10**9)) );
+        return uint128((numerator.div(denominator)).add(Z));
 
     }
 

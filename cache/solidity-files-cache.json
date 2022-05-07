@@ -474,8 +474,8 @@
       ]
     },
     "/Users/ngocban/Desktop/aave-stake-task/contracts/stake/StakedToken.sol": {
-      "lastModificationDate": 1651830202570,
-      "contentHash": "0ae625ee296e118c960e1522fab50795",
+      "lastModificationDate": 1651888097374,
+      "contentHash": "62cec5526adc9009be1b89f403a38181",
       "sourceName": "contracts/stake/StakedToken.sol",
       "solcConfig": {
         "version": "0.7.5",
@@ -510,7 +510,8 @@
         "../lib/DistributionTypes.sol",
         "./AaveDistributionManager.sol",
         "../lib/SafeMath.sol",
-        "../lib/Math.sol"
+        "../lib/Math.sol",
+        "hardhat/console.sol"
       ],
       "versionPragmas": [
         "0.7.5"
