@@ -1,0 +1,1370 @@
+{
+  "_format": "hh-sol-cache-2",
+  "files": {
+    "/Users/ngocban/Desktop/aave-stake-task-TuanAnh/contracts/aave-stake/AaveDistributionManager.sol": {
+      "lastModificationDate": 1651895630503,
+      "contentHash": "61bd92c54b72d5daea809290516c7a84",
+      "sourceName": "contracts/aave-stake/AaveDistributionManager.sol",
+      "solcConfig": {
+        "version": "0.7.5",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "../lib/SafeMath.sol",
+        "../lib/DistributionTypes.sol",
+        "../interfaces/IAaveDistributionManager.sol"
+      ],
+      "versionPragmas": [
+        "0.7.5"
+      ],
+      "artifacts": [
+        "AaveDistributionManager"
+      ]
+    },
+    "/Users/ngocban/Desktop/aave-stake-task-TuanAnh/contracts/lib/SafeMath.sol": {
+      "lastModificationDate": 1651895630503,
+      "contentHash": "ceabdccacd786d165c44989f73dfc8ec",
+      "sourceName": "contracts/lib/SafeMath.sol",
+      "solcConfig": {
+        "version": "0.7.5",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "0.7.5"
+      ],
+      "artifacts": [
+        "SafeMath"
+      ]
+    },
+    "/Users/ngocban/Desktop/aave-stake-task-TuanAnh/contracts/lib/DistributionTypes.sol": {
+      "lastModificationDate": 1651895630503,
+      "contentHash": "638c8a43d044b3f7d3a3aa37b882e0e3",
+      "sourceName": "contracts/lib/DistributionTypes.sol",
+      "solcConfig": {
+        "version": "0.7.5",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "0.7.5"
+      ],
+      "artifacts": [
+        "DistributionTypes"
+      ]
+    },
+    "/Users/ngocban/Desktop/aave-stake-task-TuanAnh/contracts/interfaces/IAaveDistributionManager.sol": {
+      "lastModificationDate": 1651895630504,
+      "contentHash": "0ecbf95b29192637be88806926910d6c",
+      "sourceName": "contracts/interfaces/IAaveDistributionManager.sol",
+      "solcConfig": {
+        "version": "0.7.5",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "../lib/DistributionTypes.sol"
+      ],
+      "versionPragmas": [
+        "0.7.5"
+      ],
+      "artifacts": [
+        "IAaveDistributionManager"
+      ]
+    },
+    "/Users/ngocban/Desktop/aave-stake-task-TuanAnh/contracts/aave-stake/StakedToken.sol": {
+      "lastModificationDate": 1651895630503,
+      "contentHash": "ee03f8065a161dd53e4b3fcdaf2f698a",
+      "sourceName": "contracts/aave-stake/StakedToken.sol",
+      "solcConfig": {
+        "version": "0.7.5",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "../interfaces/IERC20.sol",
+        "../interfaces/IStakedAave.sol",
+        "../interfaces/ITransferHook.sol",
+        "../lib/ERC20WithSnapshot.sol",
+        "../lib/SafeERC20.sol",
+        "../utils/VersionedInitializable.sol",
+        "../lib/DistributionTypes.sol",
+        "./AaveDistributionManager.sol",
+        "../lib/SafeMath.sol"
+      ],
+      "versionPragmas": [
+        "0.7.5"
+      ],
+      "artifacts": [
+        "StakedToken"
+      ]
+    },
+    "/Users/ngocban/Desktop/aave-stake-task-TuanAnh/contracts/interfaces/IERC20.sol": {
+      "lastModificationDate": 1651895630504,
+      "contentHash": "7d465e63e79e4ab02def5f809379d496",
+      "sourceName": "contracts/interfaces/IERC20.sol",
+      "solcConfig": {
+        "version": "0.7.5",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "0.7.5"
+      ],
+      "artifacts": [
+        "IERC20"
+      ]
+    },
+    "/Users/ngocban/Desktop/aave-stake-task-TuanAnh/contracts/interfaces/IStakedAave.sol": {
+      "lastModificationDate": 1651895630504,
+      "contentHash": "78a94402baf15533eca888022de6a16a",
+      "sourceName": "contracts/interfaces/IStakedAave.sol",
+      "solcConfig": {
+        "version": "0.7.5",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "0.7.5"
+      ],
+      "artifacts": [
+        "IStakedAave"
+      ]
+    },
+    "/Users/ngocban/Desktop/aave-stake-task-TuanAnh/contracts/interfaces/ITransferHook.sol": {
+      "lastModificationDate": 1651895630504,
+      "contentHash": "91abe2c17300a6c983ef9a82cdbfebcc",
+      "sourceName": "contracts/interfaces/ITransferHook.sol",
+      "solcConfig": {
+        "version": "0.7.5",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "0.7.5"
+      ],
+      "artifacts": [
+        "ITransferHook"
+      ]
+    },
+    "/Users/ngocban/Desktop/aave-stake-task-TuanAnh/contracts/lib/ERC20WithSnapshot.sol": {
+      "lastModificationDate": 1651895630503,
+      "contentHash": "e4c107fc8dd70d6e5091ccda219030df",
+      "sourceName": "contracts/lib/ERC20WithSnapshot.sol",
+      "solcConfig": {
+        "version": "0.7.5",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "../lib/ERC20.sol",
+        "../interfaces/ITransferHook.sol",
+        "../lib/SafeMath.sol"
+      ],
+      "versionPragmas": [
+        "0.7.5"
+      ],
+      "artifacts": [
+        "ERC20WithSnapshot"
+      ]
+    },
+    "/Users/ngocban/Desktop/aave-stake-task-TuanAnh/contracts/lib/SafeERC20.sol": {
+      "lastModificationDate": 1651895630503,
+      "contentHash": "fd8643a5300938cd96e35af406f4f075",
+      "sourceName": "contracts/lib/SafeERC20.sol",
+      "solcConfig": {
+        "version": "0.7.5",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "../interfaces/IERC20.sol",
+        "./SafeMath.sol",
+        "./Address.sol"
+      ],
+      "versionPragmas": [
+        "0.7.5"
+      ],
+      "artifacts": [
+        "SafeERC20"
+      ]
+    },
+    "/Users/ngocban/Desktop/aave-stake-task-TuanAnh/contracts/utils/VersionedInitializable.sol": {
+      "lastModificationDate": 1651895630503,
+      "contentHash": "a9026d1f3ffd623c1a41cbbcb737c490",
+      "sourceName": "contracts/utils/VersionedInitializable.sol",
+      "solcConfig": {
+        "version": "0.7.5",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "0.7.5"
+      ],
+      "artifacts": [
+        "VersionedInitializable"
+      ]
+    },
+    "/Users/ngocban/Desktop/aave-stake-task-TuanAnh/contracts/lib/ERC20.sol": {
+      "lastModificationDate": 1651895630503,
+      "contentHash": "e715e012fbe8ebec4a6217d9eed57ca8",
+      "sourceName": "contracts/lib/ERC20.sol",
+      "solcConfig": {
+        "version": "0.7.5",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "./Context.sol",
+        "../interfaces/IERC20.sol",
+        "../interfaces/IERC20Detailed.sol",
+        "./SafeMath.sol"
+      ],
+      "versionPragmas": [
+        "0.7.5"
+      ],
+      "artifacts": [
+        "ERC20"
+      ]
+    },
+    "/Users/ngocban/Desktop/aave-stake-task-TuanAnh/contracts/lib/Context.sol": {
+      "lastModificationDate": 1651895630504,
+      "contentHash": "bbf3b640ff3eac6258fc4932afc4d1f3",
+      "sourceName": "contracts/lib/Context.sol",
+      "solcConfig": {
+        "version": "0.7.5",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "0.7.5"
+      ],
+      "artifacts": [
+        "Context"
+      ]
+    },
+    "/Users/ngocban/Desktop/aave-stake-task-TuanAnh/contracts/interfaces/IERC20Detailed.sol": {
+      "lastModificationDate": 1651895630504,
+      "contentHash": "dd34b00cedebdf782f2180e45da04ddc",
+      "sourceName": "contracts/interfaces/IERC20Detailed.sol",
+      "solcConfig": {
+        "version": "0.7.5",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "./IERC20.sol"
+      ],
+      "versionPragmas": [
+        "0.7.5"
+      ],
+      "artifacts": [
+        "IERC20Detailed"
+      ]
+    },
+    "/Users/ngocban/Desktop/aave-stake-task-TuanAnh/contracts/lib/Address.sol": {
+      "lastModificationDate": 1651895630503,
+      "contentHash": "51d18004ae66dea477fbe2c05271b246",
+      "sourceName": "contracts/lib/Address.sol",
+      "solcConfig": {
+        "version": "0.7.5",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "0.7.5"
+      ],
+      "artifacts": [
+        "Address"
+      ]
+    },
+    "/Users/ngocban/Desktop/aave-stake-task-TuanAnh/contracts/stake/StakedToken.sol": {
+      "lastModificationDate": 1651895630503,
+      "contentHash": "3691e6ec04df59f2bcb986ed03c6eec0",
+      "sourceName": "contracts/stake/StakedToken.sol",
+      "solcConfig": {
+        "version": "0.7.5",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "hardhat/console.sol",
+        "../interfaces/IERC20.sol",
+        "../interfaces/IStakedAave.sol",
+        "../interfaces/ITransferHook.sol",
+        "../lib/ERC20WithSnapshot.sol",
+        "../lib/SafeERC20.sol",
+        "../utils/VersionedInitializable.sol",
+        "../lib/DistributionTypes.sol",
+        "./AaveDistributionManager.sol",
+        "../lib/SafeMath.sol",
+        "../lib/UniV2Math.sol"
+      ],
+      "versionPragmas": [
+        "0.7.5"
+      ],
+      "artifacts": [
+        "StakedToken"
+      ]
+    },
+    "/Users/ngocban/Desktop/aave-stake-task-TuanAnh/node_modules/hardhat/console.sol": {
+      "lastModificationDate": 1651896033477,
+      "contentHash": "cc4777addd464ea56fa35b1c45df0591",
+      "sourceName": "hardhat/console.sol",
+      "solcConfig": {
+        "version": "0.7.5",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        ">=0.4.22 <0.9.0"
+      ],
+      "artifacts": [
+        "console"
+      ]
+    },
+    "/Users/ngocban/Desktop/aave-stake-task-TuanAnh/contracts/stake/AaveDistributionManager.sol": {
+      "lastModificationDate": 1651895630503,
+      "contentHash": "1e938a99373f30d12acaf2f8d60b022b",
+      "sourceName": "contracts/stake/AaveDistributionManager.sol",
+      "solcConfig": {
+        "version": "0.7.5",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "hardhat/console.sol",
+        "../lib/SafeMath.sol",
+        "../lib/DistributionTypes.sol",
+        "../interfaces/IAaveDistributionManager.sol"
+      ],
+      "versionPragmas": [
+        "0.7.5"
+      ],
+      "artifacts": [
+        "AaveDistributionManager"
+      ]
+    },
+    "/Users/ngocban/Desktop/aave-stake-task-TuanAnh/contracts/lib/UniV2Math.sol": {
+      "lastModificationDate": 1651895630504,
+      "contentHash": "0293e84e26053aef5e1a59b00a643012",
+      "sourceName": "contracts/lib/UniV2Math.sol",
+      "solcConfig": {
+        "version": "0.7.5",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "=0.7.5"
+      ],
+      "artifacts": [
+        "UniV2Math"
+      ]
+    },
+    "/Users/ngocban/Desktop/aave-stake-task-TuanAnh/contracts/lib/BaseUpgradeabilityProxy.sol": {
+      "lastModificationDate": 1651895630503,
+      "contentHash": "2087345b390eebfcb4522908661f2e90",
+      "sourceName": "contracts/lib/BaseUpgradeabilityProxy.sol",
+      "solcConfig": {
+        "version": "0.7.5",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "./Proxy.sol",
+        "./Address.sol"
+      ],
+      "versionPragmas": [
+        "0.7.5"
+      ],
+      "artifacts": [
+        "BaseUpgradeabilityProxy"
+      ]
+    },
+    "/Users/ngocban/Desktop/aave-stake-task-TuanAnh/contracts/lib/Proxy.sol": {
+      "lastModificationDate": 1651895630503,
+      "contentHash": "7883c4bd399622bd2c9fa64ce3e4f5d2",
+      "sourceName": "contracts/lib/Proxy.sol",
+      "solcConfig": {
+        "version": "0.7.5",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "0.7.5"
+      ],
+      "artifacts": [
+        "Proxy"
+      ]
+    },
+    "/Users/ngocban/Desktop/aave-stake-task-TuanAnh/contracts/lib/InitializableUpgradeabilityProxy.sol": {
+      "lastModificationDate": 1651895630503,
+      "contentHash": "ab7fd5614d70b5a976d2e4f35125c218",
+      "sourceName": "contracts/lib/InitializableUpgradeabilityProxy.sol",
+      "solcConfig": {
+        "version": "0.7.5",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "./BaseUpgradeabilityProxy.sol"
+      ],
+      "versionPragmas": [
+        "0.7.5"
+      ],
+      "artifacts": [
+        "InitializableUpgradeabilityProxy"
+      ]
+    },
+    "/Users/ngocban/Desktop/aave-stake-task-TuanAnh/contracts/lib/InitializableAdminUpgradeabilityProxy.sol": {
+      "lastModificationDate": 1651895630503,
+      "contentHash": "458f3294972c79fa20ef2a01e9b9ce9d",
+      "sourceName": "contracts/lib/InitializableAdminUpgradeabilityProxy.sol",
+      "solcConfig": {
+        "version": "0.7.5",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "./BaseAdminUpgradeabilityProxy.sol",
+        "./InitializableUpgradeabilityProxy.sol"
+      ],
+      "versionPragmas": [
+        "0.7.5"
+      ],
+      "artifacts": [
+        "InitializableAdminUpgradeabilityProxy"
+      ]
+    },
+    "/Users/ngocban/Desktop/aave-stake-task-TuanAnh/contracts/lib/BaseAdminUpgradeabilityProxy.sol": {
+      "lastModificationDate": 1651895630503,
+      "contentHash": "18813929b48610a11e65846f8578442f",
+      "sourceName": "contracts/lib/BaseAdminUpgradeabilityProxy.sol",
+      "solcConfig": {
+        "version": "0.7.5",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "./UpgradeabilityProxy.sol"
+      ],
+      "versionPragmas": [
+        "0.7.5"
+      ],
+      "artifacts": [
+        "BaseAdminUpgradeabilityProxy"
+      ]
+    },
+    "/Users/ngocban/Desktop/aave-stake-task-TuanAnh/contracts/lib/UpgradeabilityProxy.sol": {
+      "lastModificationDate": 1651895630504,
+      "contentHash": "f4d66ea0ebd5fe65eecc0dfd70e5a395",
+      "sourceName": "contracts/lib/UpgradeabilityProxy.sol",
+      "solcConfig": {
+        "version": "0.7.5",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "./BaseUpgradeabilityProxy.sol"
+      ],
+      "versionPragmas": [
+        "0.7.5"
+      ],
+      "artifacts": [
+        "UpgradeabilityProxy"
+      ]
+    },
+    "/Users/ngocban/Desktop/aave-stake-task-TuanAnh/contracts/stake/StakedAave.sol": {
+      "lastModificationDate": 1651895630503,
+      "contentHash": "5602898563468abbb47691e38c0a5204",
+      "sourceName": "contracts/stake/StakedAave.sol",
+      "solcConfig": {
+        "version": "0.7.5",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "../interfaces/IERC20.sol",
+        "./StakedToken.sol"
+      ],
+      "versionPragmas": [
+        "0.7.5"
+      ],
+      "artifacts": [
+        "StakedTVB"
+      ]
+    },
+    "/Users/ngocban/Desktop/aave-stake-task-TuanAnh/contracts/utils/MintableErc20.sol": {
+      "lastModificationDate": 1651895630503,
+      "contentHash": "2efdf760447779d7175f85fd4efc0b59",
+      "sourceName": "contracts/utils/MintableErc20.sol",
+      "solcConfig": {
+        "version": "0.7.5",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "../lib/ERC20.sol"
+      ],
+      "versionPragmas": [
+        "0.7.5"
+      ],
+      "artifacts": [
+        "MintableErc20"
+      ]
+    },
+    "/Users/ngocban/Desktop/aave-stake-task-TuanAnh/contracts/TVBToken.sol": {
+      "lastModificationDate": 1651895630504,
+      "contentHash": "2af81c63a15de22dee4ac3f83395a70a",
+      "sourceName": "contracts/TVBToken.sol",
+      "solcConfig": {
+        "version": "0.7.5",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "./lib/ERC20.sol"
+      ],
+      "versionPragmas": [
+        ">=0.7.0 <0.9.0"
+      ],
+      "artifacts": [
+        "TVBToken"
+      ]
+    },
+    "/Users/ngocban/Desktop/aave-stake-task-TuanAnh/contracts/aave-stake/StakedAave.sol": {
+      "lastModificationDate": 1651895630503,
+      "contentHash": "c655ad9f971be7f4404eb930ad0b3b15",
+      "sourceName": "contracts/aave-stake/StakedAave.sol",
+      "solcConfig": {
+        "version": "0.7.5",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "../interfaces/IERC20.sol",
+        "./StakedToken.sol"
+      ],
+      "versionPragmas": [
+        "0.7.5"
+      ],
+      "artifacts": [
+        "StakedAave"
+      ]
+    },
+    "/Users/ngocban/Desktop/aave-stake-task-TuanAnh/contracts/interfaces/IAaveGovernanceV2.sol": {
+      "lastModificationDate": 1651895630504,
+      "contentHash": "36ecbe0410630f0e335b734a78ef9c1a",
+      "sourceName": "contracts/interfaces/IAaveGovernanceV2.sol",
+      "solcConfig": {
+        "version": "0.7.5",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "0.7.5"
+      ],
+      "artifacts": [
+        "IAaveGovernanceV2"
+      ]
+    },
+    "/Users/ngocban/Desktop/aave-stake-task-TuanAnh/contracts/interfaces/IAaveIncentivesController.sol": {
+      "lastModificationDate": 1651895630504,
+      "contentHash": "42309e59a815cf238203baf2257071a3",
+      "sourceName": "contracts/interfaces/IAaveIncentivesController.sol",
+      "solcConfig": {
+        "version": "0.7.5",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "0.7.5"
+      ],
+      "artifacts": [
+        "IAaveIncentivesController"
+      ]
+    },
+    "/Users/ngocban/Desktop/aave-stake-task-TuanAnh/contracts/interfaces/IAToken.sol": {
+      "lastModificationDate": 1651895630504,
+      "contentHash": "99c6a6b57540cc387776dd29d78b63aa",
+      "sourceName": "contracts/interfaces/IAToken.sol",
+      "solcConfig": {
+        "version": "0.7.5",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.7.5"
+      ],
+      "artifacts": [
+        "IAToken"
+      ]
+    },
+    "/Users/ngocban/Desktop/aave-stake-task-TuanAnh/contracts/interfaces/IBPool.sol": {
+      "lastModificationDate": 1651895630504,
+      "contentHash": "8d818ceb197c7d213f507cb4713ab3c3",
+      "sourceName": "contracts/interfaces/IBPool.sol",
+      "solcConfig": {
+        "version": "0.7.5",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.7.5"
+      ],
+      "artifacts": [
+        "IBPool"
+      ]
+    },
+    "/Users/ngocban/Desktop/aave-stake-task-TuanAnh/contracts/interfaces/IConfigurableRightsPool.sol": {
+      "lastModificationDate": 1651895630504,
+      "contentHash": "7d59673e82960fa0ef79d316e90e046e",
+      "sourceName": "contracts/interfaces/IConfigurableRightsPool.sol",
+      "solcConfig": {
+        "version": "0.7.5",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.7.5"
+      ],
+      "artifacts": [
+        "IConfigurableRightsPool"
+      ]
+    },
+    "/Users/ngocban/Desktop/aave-stake-task-TuanAnh/contracts/interfaces/IControllerAaveEcosystemReserve.sol": {
+      "lastModificationDate": 1651895630504,
+      "contentHash": "8b17d5cac3eb47f2dd74854c43eb5577",
+      "sourceName": "contracts/interfaces/IControllerAaveEcosystemReserve.sol",
+      "solcConfig": {
+        "version": "0.7.5",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.7.5"
+      ],
+      "artifacts": [
+        "IControllerAaveEcosystemReserve"
+      ]
+    },
+    "/Users/ngocban/Desktop/aave-stake-task-TuanAnh/contracts/interfaces/ICRPFactory.sol": {
+      "lastModificationDate": 1651895630504,
+      "contentHash": "a988a313a2ed5cc9c96161bd3eef151b",
+      "sourceName": "contracts/interfaces/ICRPFactory.sol",
+      "solcConfig": {
+        "version": "0.7.5",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.7.5"
+      ],
+      "artifacts": [
+        "ICRPFactory"
+      ]
+    },
+    "/Users/ngocban/Desktop/aave-stake-task-TuanAnh/contracts/interfaces/IDelegationAwareToken.sol": {
+      "lastModificationDate": 1651895630504,
+      "contentHash": "57e6029f24aa61e0caf87305df1c70e8",
+      "sourceName": "contracts/interfaces/IDelegationAwareToken.sol",
+      "solcConfig": {
+        "version": "0.7.5",
+        "settings": {
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "0.7.5"
+      ],
+      "artifacts": [
+        "IDelegationAwareToken"
+      ]
+    }
+  }
+}
